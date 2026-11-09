@@ -23,6 +23,7 @@ Une extension décrit les actions custom d'un autre mod (`registerCustomAction`)
 - Avec un dossier ouvert, elles sont lues et enregistrées dans `blablalib-extensions/*.json`, à la racine du dossier. Elles ne vont pas dans le zip du datapack : le jeu n'en a pas besoin.
 - La preview ne connaît pas le code Java de l'action. Elle reproduit seulement son rythme (passe aussitôt, dure un nombre de ticks, ou attend un clic) et l'écrit dans le journal.
 - Une action dont l'extension est absente redevient une action inconnue, sans perdre ses données.
+- Les libellés, descriptions et aides sont de simples textes. Les traduire par langue du site est facultatif, et l'anglais sert de repli.
 - Exemple : [`docs/extension-exemple.json`](docs/extension-exemple.json). Le format complet est dans [`docs/plan-extensions.md`](docs/plan-extensions.md).
 
 ## Organisation du code

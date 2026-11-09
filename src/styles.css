@@ -1462,6 +1462,15 @@ input.filter {
   align-items: center;
   gap: 6px;
 }
+.localized.single {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.localized .link {
+  justify-self: start;
+  font-size: 12px;
+}
 .lang-tag {
   flex: none;
   font-size: 10px;

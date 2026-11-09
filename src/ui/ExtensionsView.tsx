@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Braces, ChevronDown, ChevronRight, ChevronUp, Copy, Download, FileUp, Plus, Puzzle, RotateCcw, ScrollText, Trash2, XCircle } from 'lucide-react';
+import { AlertTriangle, Braces, ChevronDown, ChevronRight, ChevronUp, Copy, Download, FileUp, Languages, Plus, Puzzle, RotateCcw, ScrollText, Trash2, X, XCircle } from 'lucide-react';
 import { parseResourceLocation, type RawAction } from '../engine/sim';
 import { getLang, LANGUAGES, N_, t } from '../i18n';
 import {
@@ -88,23 +88,46 @@ function CommitInput({ value, onCommit, className, placeholder, ariaLabel }: { v
   );
 }
 
-/** Un texte par langue du site. Une simple chaîne est montrée dans toutes les langues jusqu'à ce qu'on la traduise. */
+/**
+ * Un texte simple, affiché quelle que soit la langue du site. Les traductions sont facultatives :
+ * le texte devient alors { "en": …, "fr": … }, et l'anglais sert de repli.
+ */
 function LocalizedInputs({ value, onChange, placeholder }: { value: Localized | undefined; onChange: (v: Localized | undefined) => void; placeholder?: string }) {
-  const get = (lang: string) => (typeof value === 'string' ? value : (value?.[lang] ?? ''));
-  const set = (lang: string, v: string) => {
-    const next: Record<string, string> = typeof value === 'string' ? Object.fromEntries(LANGUAGES.map((l) => [l.id, value])) : { ...(value ?? {}) };
-    next[lang] = v;
-    onChange(Object.values(next).some((x) => x) ? next : undefined);
+  if (value === undefined || typeof value === 'string') {
+    const firstOther = LANGUAGES.find((l) => l.id !== 'en')!.id;
+    return (
+      <div className="localized single">
+        <input value={value ?? ''} placeholder={placeholder} onChange={(e) => onChange(e.target.value || undefined)} />
+        <button type="button" className="icon-btn" title={t('Ajouter une traduction par langue du site')} onClick={() => onChange({ en: value ?? '', [firstOther]: '' })}>
+          <Languages size={14} />
+        </button>
+      </div>
+    );
+  }
+  const entries = Object.entries(value).sort(([a], [b]) => (a === 'en' ? -1 : b === 'en' ? 1 : a.localeCompare(b)));
+  const missing = LANGUAGES.filter((l) => !(l.id in value));
+  const remove = (lang: string) => {
+    const rest = entries.filter(([l]) => l !== lang);
+    // Une seule langue restante : on revient à un texte simple.
+    onChange(rest.length === 1 ? rest[0][1] || undefined : Object.fromEntries(rest));
   };
   return (
     <div className="localized">
-      {LANGUAGES.map((l) => (
-        <label key={l.id}>
-          <span className="lang-tag" title={l.name}>
-            {l.id.toUpperCase()}
+      {entries.map(([lang, text]) => (
+        <label key={lang}>
+          <span className="lang-tag" title={LANGUAGES.find((l) => l.id === lang)?.name}>
+            {lang.toUpperCase()}
           </span>
-          <input value={get(l.id)} placeholder={placeholder} onChange={(e) => set(l.id, e.target.value)} />
+          <input value={text} placeholder={placeholder} onChange={(e) => onChange({ ...value, [lang]: e.target.value })} />
+          <button type="button" className="icon-btn" title={t('Retirer cette traduction')} onClick={() => remove(lang)}>
+            <X size={13} />
+          </button>
         </label>
+      ))}
+      {missing.map((l) => (
+        <button key={l.id} type="button" className="link" onClick={() => onChange({ ...value, [l.id]: '' })}>
+          {t('Ajouter {lang}', { lang: l.name })}
+        </button>
       ))}
     </div>
   );

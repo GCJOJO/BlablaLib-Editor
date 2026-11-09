@@ -18,7 +18,7 @@ export type PreviewMode = (typeof PREVIEW_MODES)[number];
 /** Noms d'icônes acceptés. Le dessin correspondant est dans ui/icons.ts. */
 export const EXTENSION_ICONS = ['puzzle', 'wand', 'sparkles', 'camera', 'music', 'flag', 'star', 'zap', 'heart', 'box', 'map', 'sword', 'shield', 'user', 'eye', 'bell', 'clock', 'message'] as const;
 
-/** Texte simple, ou une traduction par langue du site : { "fr": "…", "en": "…" }. */
+/** Texte simple, ou une traduction par langue du site : { "en": "…", "fr": "…" }. L'anglais sert de repli. */
 export type Localized = string | Record<string, string>;
 
 export interface ExtensionField {
@@ -400,13 +400,13 @@ export function newExtension(existing: Extension[], uidValue: string): Extension
     actions: [
       {
         id: `${id}:${t('mon_action')}`,
-        label: { fr: 'Mon action', en: 'My action' },
-        description: { fr: 'Décrivez ce que fait l’action en jeu.', en: 'Describe what the action does in game.' },
+        label: t('Mon action'),
+        description: t('Décrivez ce que fait l’action en jeu.'),
         icon: 'puzzle',
         blocking: true,
         skippable: true,
         preview: { mode: 'ticks', ticksField: 'time' },
-        fields: [{ key: 'time', label: { fr: 'Durée', en: 'Duration' }, type: 'number', default: 20, min: 0, step: 1, hint: { fr: 'En ticks.', en: 'In ticks.' }, extras: {} }],
+        fields: [{ key: 'time', label: t('Durée'), type: 'number', default: 20, min: 0, step: 1, hint: t('En ticks.'), extras: {} }],
         extras: {},
       },
     ],
@@ -419,7 +419,7 @@ export function newAction(ext: Extension): ExtensionAction {
   while (ext.actions.some((a) => a.id === `${ext.id}:action_${n}`)) n++;
   return {
     id: `${ext.id}:action_${n}`,
-    label: { fr: `Action ${n}`, en: `Action ${n}` },
+    label: t('Action {n}', { n }),
     icon: 'puzzle',
     blocking: true,
     skippable: true,
@@ -432,5 +432,5 @@ export function newAction(ext: Extension): ExtensionAction {
 export function newField(action: ExtensionAction): ExtensionField {
   let n = action.fields.length + 1;
   while (action.fields.some((f) => f.key === `field_${n}`)) n++;
-  return { key: `field_${n}`, label: { fr: `Champ ${n}`, en: `Field ${n}` }, type: 'text', extras: {} };
+  return { key: `field_${n}`, label: t('Champ {n}', { n }), type: 'text', extras: {} };
 }
