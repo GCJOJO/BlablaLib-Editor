@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 import { parseResourceLocation, type SimSpeaker } from '../engine/sim';
+import { t } from '../i18n';
 import { localesOf, translate, uid, type DialogueFile, type Project } from '../model/project';
 import { ColorField } from './Fields';
 
@@ -22,7 +23,7 @@ function SoundsInput({ sounds, onChange }: { sounds: string[]; onChange: (s: str
       {sounds.map((s, i) => (
         <span className="chip mono" key={i}>
           {s}
-          <button type="button" aria-label={`Retirer ${s}`} onClick={() => onChange(sounds.filter((_, k) => k !== i))}>
+          <button type="button" aria-label={t('Retirer {name}', { name: s })} onClick={() => onChange(sounds.filter((_, k) => k !== i))}>
             <X size={11} />
           </button>
         </span>
@@ -67,16 +68,17 @@ export function SpeakersView({ project, locale, mutate }: SpeakersProps) {
   const addTo = (file: DialogueFile) =>
     mutate((p) => {
       const f = p.files.find((x) => x.uid === file.uid)!;
+      const idPrefix = `${f.namespace}:${t('personnage')}_`;
       let n = f.speakers.length + 1;
-      while (f.speakers.some((s) => s.id === `${f.namespace}:personnage_${n}`)) n++;
-      f.speakers.push({ id: `${f.namespace}:personnage_${n}`, name: `Personnage ${n}`, color: '#FFFFFFFF', sounds: [] });
+      while (f.speakers.some((s) => s.id === `${idPrefix}${n}`)) n++;
+      f.speakers.push({ id: `${idPrefix}${n}`, name: t('Personnage {n}', { n }), color: '#FFFFFFFF', sounds: [] });
     });
 
   return (
     <div className="table-view">
       <div className="timeline-head">
-        <h2>Personnages</h2>
-        <span className="muted">Partagés entre tous les fichiers du projet.</span>
+        <h2>{t('Personnages')}</h2>
+        <span className="muted">{t('Partagés entre tous les fichiers du projet.')}</span>
       </div>
       {project.files.map((file) => (
         <section key={file.uid} className="speaker-file">
@@ -88,38 +90,38 @@ export function SpeakersView({ project, locale, mutate }: SpeakersProps) {
             return (
               <div className="speaker-card" key={i}>
                 <div className="speaker-head">
-                  <span className="muted">{n === 0 ? 'Aucune réplique' : `${n} réplique${n > 1 ? 's' : ''}`}</span>
+                  <span className="muted">{n === 0 ? t('Aucune réplique') : n > 1 ? t('{n} répliques', { n }) : t('{n} réplique', { n })}</span>
                   <span className="spacer" />
-                  <button className="icon-btn danger" title="Supprimer" onClick={() => mutate((p) => void p.files.find((f) => f.uid === file.uid)!.speakers.splice(i, 1))}>
+                  <button className="icon-btn danger" title={t('Supprimer')} onClick={() => mutate((p) => void p.files.find((f) => f.uid === file.uid)!.speakers.splice(i, 1))}>
                     <Trash2 size={14} />
                   </button>
                 </div>
                 <div className="grid-form">
                   <div className="field half">
-                    <label className="field-label">Identifiant</label>
+                    <label className="field-label">{t('Identifiant')}</label>
                     <input className="mono" value={s.id ?? ''} spellCheck={false} onChange={(e) => edit(file.uid, i, (x) => void (x.id = e.target.value), 'id')} />
                   </div>
                   <div className="field half">
-                    <label className="field-label">Nom</label>
+                    <label className="field-label">{t('Nom')}</label>
                     <input value={s.name ?? ''} onChange={(e) => edit(file.uid, i, (x) => void (x.name = e.target.value), 'name')} />
-                    {s.name && translate(project, locale, s.name) !== s.name && <p className="field-hint">Affiché : {translate(project, locale, s.name)}</p>}
+                    {s.name && translate(project, locale, s.name) !== s.name && <p className="field-hint">{t('Affiché : {name}', { name: translate(project, locale, s.name) })}</p>}
                   </div>
                   <div className="field">
-                    <label className="field-label">Couleur du nom</label>
+                    <label className="field-label">{t('Couleur du nom')}</label>
                     <ColorField value={s.color} onChange={(v) => edit(file.uid, i, (x) => void (x.color = v ?? ''), 'color')} />
-                    <p className="field-hint">Avec le # obligatoire : le format « FFFFFFFF » de la doc donne toujours du blanc.</p>
+                    <p className="field-hint">{t('Avec le # obligatoire : le format « FFFFFFFF » de la doc donne toujours du blanc.')}</p>
                   </div>
                   <div className="field">
-                    <label className="field-label">Sons de frappe</label>
+                    <label className="field-label">{t('Sons de frappe')}</label>
                     <SoundsInput sounds={Array.isArray(s.sounds) ? s.sounds : []} onChange={(list) => edit(file.uid, i, (x) => void (x.sounds = list), 'sounds')} />
-                    <p className="field-hint">Un son au hasard à chaque lettre. Doit être un son enregistré dans le jeu.</p>
+                    <p className="field-hint">{t('Un son au hasard à chaque lettre. Doit être un son enregistré dans le jeu.')}</p>
                   </div>
                 </div>
               </div>
             );
           })}
           <button className="btn ghost" onClick={() => addTo(file)}>
-            <Plus size={14} /> Ajouter un personnage
+            <Plus size={14} /> {t('Ajouter un personnage')}
           </button>
         </section>
       ))}
@@ -187,42 +189,40 @@ export function LangView({ project, mutate, defaultNamespace }: { project: Proje
   return (
     <div className="table-view">
       <div className="timeline-head">
-        <h2>Traductions</h2>
-        <span className="muted">
-          {keys.length} clé{keys.length > 1 ? 's' : ''}
-        </span>
+        <h2>{t('Traductions')}</h2>
+        <span className="muted">{keys.length > 1 ? t('{n} clés', { n: keys.length }) : t('{n} clé', { n: keys.length })}</span>
         <span className="spacer" />
-        <input className="filter" placeholder="Filtrer" aria-label="Filtrer les traductions" value={filter} onChange={(e) => setFilter(e.target.value)} />
+        <input className="filter" placeholder={t('Filtrer')} aria-label={t('Filtrer les traductions')} value={filter} onChange={(e) => setFilter(e.target.value)} />
       </div>
       <p className="muted lang-intro">
-        Un texte égal à une clé connue est remplacé par sa traduction. Sinon, le jeu affiche le texte tel quel. La traduction se fait côté client, dans la langue du joueur.
+        {t('Un texte égal à une clé connue est remplacé par sa traduction. Sinon, le jeu affiche le texte tel quel. La traduction se fait côté client, dans la langue du joueur.')}
       </p>
       <div className="lang-add">
-        <input className="mono" placeholder="nouvelle.cle.de.traduction" aria-label="Nouvelle clé" value={newKey} spellCheck={false} onChange={(e) => setNewKey(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addKey()} />
+        <input className="mono" placeholder={t('nouvelle.cle.de.traduction')} aria-label={t('Nouvelle clé')} value={newKey} spellCheck={false} onChange={(e) => setNewKey(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addKey()} />
         <button className="btn small" onClick={addKey}>
-          <Plus size={14} /> Clé
+          <Plus size={14} /> {t('Clé')}
         </button>
-        <input className="mono" placeholder="de_de" aria-label="Nouvelle langue" value={newLocale} spellCheck={false} onChange={(e) => setNewLocale(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addLocale()} />
+        <input className="mono" placeholder="de_de" aria-label={t('Nouvelle langue')} value={newLocale} spellCheck={false} onChange={(e) => setNewLocale(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addLocale()} />
         <button className="btn small" onClick={addLocale}>
-          <Plus size={14} /> Langue
+          <Plus size={14} /> {t('Langue')}
         </button>
       </div>
       {locales.length === 0 && keys.length === 0 ? (
         <div className="empty">
-          <p>Aucune traduction. Ajoutez une clé, ou écrivez simplement le texte en clair dans vos dialogues.</p>
+          <p>{t('Aucune traduction. Ajoutez une clé, ou écrivez simplement le texte en clair dans vos dialogues.')}</p>
         </div>
       ) : (
         <div className="lang-table-wrap">
           <table className="lang-table">
             <thead>
               <tr>
-                <th>Clé</th>
+                <th>{t('Clé')}</th>
                 {locales.map((l) => (
                   <th key={l} className="mono">
                     {l}
                   </th>
                 ))}
-                <th aria-label="Actions" />
+                <th aria-label={t('Actions')} />
               </tr>
             </thead>
             <tbody>
@@ -230,18 +230,18 @@ export function LangView({ project, mutate, defaultNamespace }: { project: Proje
                 <tr key={k}>
                   <td className="mono key" title={k}>
                     {k}
-                    {!used.has(k) && !k.startsWith('blablalib.commands') && <span className="tag">non utilisée</span>}
+                    {!used.has(k) && !k.startsWith('blablalib.commands') && <span className="tag">{t('non utilisée')}</span>}
                   </td>
                   {locales.map((l) => {
                     const holder = project.langs.find((x) => x.locale === l && k in x.entries);
                     return (
                       <td key={l} className={holder ? '' : 'missing'}>
-                        <textarea rows={1} aria-label={`${k} en ${l}`} value={holder?.entries[k] ?? ''} placeholder="manquant" onChange={(e) => setValue(k, l, e.target.value)} />
+                        <textarea rows={1} aria-label={t('{key} en {locale}', { key: k, locale: l })} value={holder?.entries[k] ?? ''} placeholder={t('manquant')} onChange={(e) => setValue(k, l, e.target.value)} />
                       </td>
                     );
                   })}
                   <td>
-                    <button className="icon-btn danger" title="Supprimer cette clé" onClick={() => removeKey(k)}>
+                    <button className="icon-btn danger" title={t('Supprimer cette clé')} onClick={() => removeKey(k)}>
                       <Trash2 size={14} />
                     </button>
                   </td>

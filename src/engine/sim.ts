@@ -10,6 +10,7 @@ import { combineEffects, flattenBBCode, layoutChars, type CharLayout, type Style
 import { colorFromString, colorFromStringOr, lerpColor, rgba, TRANSPARENT, WHITE, type Color } from './color';
 import { EASINGS, type Easing } from './easing';
 import { textWidth } from './font';
+import { t as tr } from '../i18n';
 
 export type RawAction = Record<string, unknown>;
 
@@ -90,22 +91,22 @@ const has = (o: RawAction, k: string) => Object.prototype.hasOwnProperty.call(o,
 function asString(v: unknown): string {
   if (typeof v === 'string') return v;
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-  throw new Error(`valeur non textuelle : ${JSON.stringify(v)}`);
+  throw new Error(tr('valeur non textuelle : {value}', { value: JSON.stringify(v) }));
 }
 function asNumber(v: unknown): number {
   if (typeof v === 'number') return v;
   if (typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v))) return Number(v);
-  throw new Error(`valeur non numérique : ${JSON.stringify(v)}`);
+  throw new Error(tr('valeur non numérique : {value}', { value: JSON.stringify(v) }));
 }
 const asInt = (v: unknown) => Math.trunc(asNumber(v));
 function asBool(v: unknown): boolean {
   if (typeof v === 'boolean') return v;
   if (typeof v === 'string') return v.toLowerCase() === 'true';
-  throw new Error(`valeur non booléenne : ${JSON.stringify(v)}`);
+  throw new Error(tr('valeur non booléenne : {value}', { value: JSON.stringify(v) }));
 }
 function asObject(v: unknown): RawAction {
   if (v && typeof v === 'object' && !Array.isArray(v)) return v as RawAction;
-  throw new Error('objet JSON attendu');
+  throw new Error(tr('objet JSON attendu'));
 }
 
 /** ResourceLocation.tryParse : null si invalide, namespace `minecraft` par défaut. */
@@ -336,7 +337,7 @@ export class ChoiceAction extends Action {
     }
   }
   handleClick(option: ChoiceOption) {
-    this.screen.run.emit('choice', `Choix : « ${this.screen.world.translate(option.name)} »`, this.index);
+    this.screen.run.emit('choice', tr('Choix : « {name} »', { name: this.screen.world.translate(option.name) }), this.index);
     if (option.next !== null && option.save !== null) this.screen.run.sendChoice(option);
     this.screen.queueEndDialogue();
   }
@@ -403,7 +404,7 @@ export class TextAction extends Action {
         this.alpha = 0;
       }
     }
-    if (!this.color) throw new Error('DialogueText : couleur invalide (color est null)');
+    if (!this.color) throw new Error(tr('DialogueText : couleur invalide (color est null)'));
     const label = this.screen.world.translate(this.text);
     const s = this.screen;
     const w = textWidth(label) * this.scale;
@@ -445,7 +446,7 @@ export class ImageAction extends Action {
   draw(p: Painter) {
     if (this.alpha <= 8) return;
     if (this.alpha >= 255) this.alpha = 255;
-    if (!this.image) throw new Error('DialogueImage : aucune image (image est null)');
+    if (!this.image) throw new Error(tr('DialogueImage : aucune image (image est null)'));
     const s = this.screen;
     p.image({
       texture: this.image,
@@ -548,7 +549,7 @@ export class FadeAction extends Action {
     this.elapsed += dt;
     const v = this.elapsed / this.time;
     const pct = Number.isNaN(v) ? NaN : Math.min(1, Math.max(0, v));
-    if (!this.from || !this.to) throw new Error('DialogueFading : "from" ou "to" manquant (couleur null)');
+    if (!this.from || !this.to) throw new Error(tr('DialogueFading : "from" ou "to" manquant (couleur null)'));
     p.fill(0, 0, this.screen.width, this.screen.height, lerpColor(this.from, this.to, pct));
   }
 }
@@ -649,9 +650,9 @@ export class SoundAction extends Action {
   }
   setup(screen: DialogueScreen) {
     super.setup(screen);
-    if (this.sound === null) throw new Error('DialogueSound : aucun son (ResourceLocation.tryParse(null))');
+    if (this.sound === null) throw new Error(tr('DialogueSound : aucun son (ResourceLocation.tryParse(null))'));
     const opts = this.pitch !== 1 || this.volume !== 1 ? ` (pitch ${this.pitch}, volume ${this.volume})` : '';
-    screen.run.emit('sound', `Son : ${this.sound}${opts}`, this.index);
+    screen.run.emit('sound', tr('Son : {sound}{options}', { sound: this.sound, options: opts }), this.index);
   }
 }
 
@@ -670,7 +671,7 @@ export class CommandAction extends Action {
     screen.queueAdvanceDialogue();
   }
   completed(server: Server) {
-    if (this.command !== null) server.run.emit('command', `/${this.command.replace(/<PLAYER>/g, 'Joueur')}`, this.index);
+    if (this.command !== null) server.run.emit('command', `/${this.command.replace(/<PLAYER>/g, tr('Joueur'))}`, this.index);
   }
 }
 
@@ -690,12 +691,12 @@ export class NpcAction extends Action {
     this.type = asString(o.type);
     this.value = o.value;
     const t = this.type;
-    if (!['bool', 'number', 'string', 'resource_location', 'unknown'].includes(t)) throw new Error(`Type de variable inconnu : ${t}`);
-    if (t === 'bool' && typeof this.value !== 'boolean') throw new Error('valeur bool attendue');
-    if (t === 'number' && typeof this.value !== 'number') throw new Error('valeur number attendue');
-    if (t === 'string' && typeof this.value !== 'string') throw new Error('valeur string attendue');
+    if (!['bool', 'number', 'string', 'resource_location', 'unknown'].includes(t)) throw new Error(tr('Type de variable inconnu : {type}', { type: t }));
+    if (t === 'bool' && typeof this.value !== 'boolean') throw new Error(tr('valeur bool attendue'));
+    if (t === 'number' && typeof this.value !== 'number') throw new Error(tr('valeur number attendue'));
+    if (t === 'string' && typeof this.value !== 'string') throw new Error(tr('valeur string attendue'));
     if (t === 'resource_location' && (typeof this.value !== 'string' || !parseResourceLocation(this.value))) {
-      throw new Error('resource_location attendue');
+      throw new Error(tr('resource_location attendue'));
     }
   }
   setup(screen: DialogueScreen) {
@@ -703,7 +704,7 @@ export class NpcAction extends Action {
     screen.queueAdvanceDialogue();
   }
   completed(server: Server) {
-    server.run.emit('npc', `PNJ #${this.npc} : ${this.variable} = ${JSON.stringify(this.value)}`, this.index);
+    server.run.emit('npc', tr('PNJ #{npc} : {variable} = {value}', { npc: this.npc, variable: this.variable, value: JSON.stringify(this.value) }), this.index);
   }
 }
 
@@ -726,10 +727,10 @@ export class QuestStateAction extends Action {
     screen.queueAdvanceDialogue();
   }
   completed(server: Server) {
-    if (this.state === null) throw new Error('DialogueQuestStateAction : "state" manquant');
+    if (this.state === null) throw new Error(tr('DialogueQuestStateAction : "state" manquant'));
     if (this.state !== '' && this.quest) {
       const target = this.task ? `${this.quest} / tâche ${this.task}` : this.quest;
-      server.run.emit('quest', `Quête ${target} → ${this.state}`, this.index);
+      server.run.emit('quest', tr('Quête {target} → {state}', { target, state: this.state }), this.index);
     }
   }
 }
@@ -753,8 +754,10 @@ export class PlayCutsceneAction extends Action {
   }
   setup(screen: DialogueScreen) {
     super.setup(screen);
-    if (!this.cutscene) throw new Error('DialoguePlayCutscene : aucune cinématique');
-    screen.run.emit('cutscene', `Cinématique : ${this.cutscene}${this.waitForEnd ? ` (fin simulée après ${SIMULATED_CUTSCENE_TICKS} ticks)` : ''}`, this.index);
+    if (!this.cutscene) throw new Error(tr('DialoguePlayCutscene : aucune cinématique'));
+    screen.run.emit('cutscene', this.waitForEnd
+        ? tr('Cinématique : {name} (fin simulée après {n} ticks)', { name: this.cutscene, n: SIMULATED_CUTSCENE_TICKS })
+        : tr('Cinématique : {name}', { name: this.cutscene }), this.index);
     if (!this.waitForEnd) {
       screen.queueAdvanceDialogue();
       return;
@@ -1007,11 +1010,11 @@ export class Server {
     const raw = id ? this.run.world.dialogue(id) : undefined;
     if (!id || !raw) {
       // BlablaLib.openDialogue : dialogue introuvable -> rien ne se passe, l'écran reste ouvert.
-      this.run.emit('warn', `Dialogue introuvable : ${id ?? '(aucun)'}. Le jeu n'ouvre rien.`);
+      this.run.emit('warn', tr("Dialogue introuvable : {id}. Le jeu n'ouvre rien.", { id: id ?? tr('(aucun)') }));
       return false;
     }
     // Sans latence simulée, des dialogues qui s'enchaînent en boucle s'appelleraient à l'infini.
-    if (this.opening > 100) throw new Error('Boucle de dialogues : des next_dialogue s’enchaînent sans fin');
+    if (this.opening > 100) throw new Error(tr('Boucle de dialogues : des next_dialogue s’enchaînent sans fin'));
     this.opening++;
     try {
       this.open(id, raw);
@@ -1073,13 +1076,13 @@ export class Server {
   }
 
   completed() {
-    if (this.status) this.run.emit('end', `Dialogue terminé : ${this.status.dialogueId}`);
+    if (this.status) this.run.emit('end', tr('Dialogue terminé : {id}', { id: this.status.dialogueId }));
     this.status = null;
   }
 
   choice(option: ChoiceOption) {
-    if (option.action) this.run.emit('choice', `Action de choix envoyée : ${option.action}`);
-    if (option.save) this.run.emit('choice', `Dialogue sauvegardé : ${option.save}`);
+    if (option.action) this.run.emit('choice', tr('Action de choix envoyée : {action}', { action: option.action }));
+    if (option.save) this.run.emit('choice', tr('Dialogue sauvegardé : {id}', { id: option.save }));
     this.openDialogue(option.next);
   }
 }
@@ -1160,7 +1163,7 @@ export class PreviewRun {
 
   openScreen(id: string) {
     this.screen = new DialogueScreen(this, id, this.width, this.height);
-    this.emit('open', `Ouverture : ${id}`);
+    this.emit('open', tr('Ouverture : {id}', { id }));
   }
   sendAdvanced(from: DialogueScreen, index: number) {
     this.send(() => {
@@ -1182,7 +1185,7 @@ export class PreviewRun {
       fn();
     } catch (e) {
       this.crash = e instanceof Error ? e.message : String(e);
-      this.emit('warn', `Le jeu planterait ici : ${this.crash}`);
+      this.emit('warn', tr('Le jeu planterait ici : {error}', { error: this.crash }));
     }
   }
 

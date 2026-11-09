@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { CanvasPainter, drawPlaceholderWorld } from '../engine/render';
 import { PreviewRun, type RunEvent, type RunEventKind, type SimWorld } from '../engine/sim';
+import { N_, t, useLang } from '../i18n';
 
 export interface PlayStatus {
   dialogueId: string | null;
@@ -30,10 +31,10 @@ export interface PlayStatus {
 }
 
 const RESOLUTIONS = [
-  { label: '1080p, interface 3', w: 640, h: 360 },
-  { label: '1080p, interface 2', w: 960, h: 540 },
-  { label: '1080p, interface 4', w: 480, h: 270 },
-  { label: '854 × 480, interface 2', w: 427, h: 240 },
+  { label: N_('1080p, interface 3'), w: 640, h: 360 },
+  { label: N_('1080p, interface 2'), w: 960, h: 540 },
+  { label: N_('1080p, interface 4'), w: 480, h: 270 },
+  { label: N_('854 × 480, interface 2'), w: 427, h: 240 },
 ];
 
 const SPEEDS = [0.25, 0.5, 1, 2, 4];
@@ -64,6 +65,7 @@ interface Props {
 }
 
 export function PreviewPanel({ world, revision, dialogueId, targetIndex, playRequest, textures, onStatus, onOpenDialogue }: Props) {
+  const lang = useLang();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const runRef = useRef<PreviewRun | null>(null);
@@ -123,7 +125,8 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
     if (followedIndex >= 0) setPaused(false);
   }, [dialogueId, followedIndex, start]);
 
-  // Modification du projet : on rejoue jusqu'au même endroit et on montre le résultat tout de suite.
+  // Modification du projet ou de la langue (le journal est écrit dans la langue du moment) : on
+  // rejoue jusqu'au même endroit et on montre le résultat tout de suite.
   const firstRevision = useRef(true);
   useEffect(() => {
     if (firstRevision.current) {
@@ -136,7 +139,7 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
     const index = followedIndex >= 0 ? followedIndex : sameDialogue ? run!.screen!.actionIndex : 0;
     start(dialogueId, index, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [revision]);
+  }, [revision, lang]);
 
   useEffect(() => {
     if (playRequest) {
@@ -263,12 +266,12 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
   const elsewhere = running && dialogueId && running !== dialogueId;
 
   return (
-    <section className="preview" aria-label="Preview">
+    <section className="preview" aria-label={t('Preview')}>
       <div className="stage" ref={stageRef}>
         <canvas
           ref={canvasRef}
           tabIndex={0}
-          aria-label="Écran de dialogue. Clic, Espace ou Entrée pour avancer un message, Entrée pour une attente de touche, Échap pour passer."
+          aria-label={t('Écran de dialogue. Clic, Espace ou Entrée pour avancer un message, Entrée pour une attente de touche, Échap pour passer.')}
           style={{ aspectRatio: `${res.w} / ${res.h}` }}
           onMouseMove={(e) => (mouse.current = toGui(e))}
           onMouseLeave={() => (mouse.current = { x: -1, y: -1 })}
@@ -285,48 +288,48 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
             }
           }}
         />
-        {!dialogueId && <div className="stage-overlay">Choisissez un dialogue pour le prévisualiser.</div>}
+        {!dialogueId && <div className="stage-overlay">{t('Choisissez un dialogue pour le prévisualiser.')}</div>}
         {dialogueId && runState.crash && (
           <div className="stage-overlay crash">
             <AlertTriangle size={18} />
-            <strong>Le jeu planterait ici</strong>
+            <strong>{t('Le jeu planterait ici')}</strong>
             <span className="mono">{runState.crash}</span>
             <button className="btn small" onClick={restart}>
-              Rejouer
+              {t('Rejouer')}
             </button>
           </div>
         )}
         {dialogueId && !runState.crash && runState.done && (
           <div className="stage-overlay">
-            <span>Dialogue terminé</span>
+            <span>{t('Dialogue terminé')}</span>
             <button className="btn small primary" onClick={restart}>
-              <RotateCcw size={14} /> Rejouer
+              <RotateCcw size={14} /> {t('Rejouer')}
             </button>
           </div>
         )}
         {dialogueId && !runState.crash && !runState.done && runState.stuck && (
           <div className="stage-banner warn">
-            <AlertTriangle size={14} /> Écran bloqué : le joueur ne peut plus sortir de ce dialogue, même avec Échap.
+            <AlertTriangle size={14} /> {t('Écran bloqué : le joueur ne peut plus sortir de ce dialogue, même avec Échap.')}
           </div>
         )}
         {dialogueId && runState.waitingEnter && !runState.crash && (
-          <div className="stage-banner">En attente de la touche Entrée. Ce message n'existe que dans la preview : en jeu, rien ne l'indique.</div>
+          <div className="stage-banner">{t("En attente de la touche Entrée. Ce message n'existe que dans la preview : en jeu, rien ne l'indique.")}</div>
         )}
         {dialogueId && runState.unreachable && !runState.done && !runState.stuck && !runState.crash && (
-          <div className="stage-banner">L'action sélectionnée n'est jamais atteinte : la preview s'est arrêtée juste avant.</div>
+          <div className="stage-banner">{t("L'action sélectionnée n'est jamais atteinte : la preview s'est arrêtée juste avant.")}</div>
         )}
       </div>
 
       <div className="transport">
-        <button className="btn icon primary" title="Rejouer depuis le début" onClick={restart} disabled={!dialogueId}>
+        <button className="btn icon primary" title={t('Rejouer depuis le début')} onClick={restart} disabled={!dialogueId}>
           <RotateCcw size={15} />
         </button>
-        <button className="btn icon" title={paused ? 'Reprendre' : 'Pause'} onClick={() => setPaused(!paused)}>
+        <button className="btn icon" title={paused ? t('Reprendre') : t('Pause')} onClick={() => setPaused(!paused)}>
           {paused ? <Play size={15} /> : <Pause size={15} />}
         </button>
         <button
           className="btn icon"
-          title="Avancer d'un tick"
+          title={t("Avancer d'un tick")}
           disabled={!paused}
           onClick={() => {
             const run = runRef.current;
@@ -338,13 +341,13 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
         >
           <StepForward size={15} />
         </button>
-        <button className="btn icon" title="Avancer (Entrée)" onClick={() => runRef.current?.key(257)}>
+        <button className="btn icon" title={t('Avancer (Entrée)')} onClick={() => runRef.current?.key(257)}>
           <FastForward size={15} />
         </button>
-        <button className="btn icon" title="Passer (Échap)" onClick={() => runRef.current?.key(256)}>
+        <button className="btn icon" title={t('Passer (Échap)')} onClick={() => runRef.current?.key(256)}>
           <SkipForward size={15} />
         </button>
-        <select aria-label="Vitesse" value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
+        <select aria-label={t('Vitesse')} value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
           {SPEEDS.map((s) => (
             <option key={s} value={s}>
               ×{s}
@@ -352,18 +355,18 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
           ))}
         </select>
         <span className="spacer" />
-        <button className={follow ? 'btn icon toggled' : 'btn icon'} title="Suivre l'action sélectionnée" aria-pressed={follow} onClick={() => setFollow(!follow)}>
+        <button className={follow ? 'btn icon toggled' : 'btn icon'} title={t("Suivre l'action sélectionnée")} aria-pressed={follow} onClick={() => setFollow(!follow)}>
           <Crosshair size={15} />
         </button>
         <button
           className={network ? 'btn icon toggled' : 'btn icon'}
-          title="Simuler le réseau du mod : envoi par lots de 3 et un tick de latence."
+          title={t('Simuler le réseau du mod : envoi par lots de 3 et un tick de latence.')}
           aria-pressed={network}
           onClick={() => setNetwork(!network)}
         >
           <Network size={15} />
         </button>
-        <label className="btn icon" title="Fond : importer une capture de votre monde">
+        <label className="btn icon" title={t('Fond : importer une capture de votre monde')}>
           <ImagePlus size={15} />
           <input
             type="file"
@@ -376,14 +379,14 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
             }}
           />
         </label>
-        <select aria-label="Résolution" value={resIndex} onChange={(e) => setResIndex(Number(e.target.value))}>
+        <select aria-label={t('Résolution')} value={resIndex} onChange={(e) => setResIndex(Number(e.target.value))}>
           {RESOLUTIONS.map((r, i) => (
             <option key={r.label} value={i}>
-              {r.label}
+              {t(r.label)}
             </option>
           ))}
         </select>
-        <button className="btn icon" title="Plein écran" onClick={() => canvasRef.current?.requestFullscreen()}>
+        <button className="btn icon" title={t('Plein écran')} onClick={() => canvasRef.current?.requestFullscreen()}>
           <Maximize size={15} />
         </button>
       </div>
@@ -391,7 +394,7 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
       <div className="preview-status">
         {elsewhere ? (
           <>
-            <span>En lecture :</span>
+            <span>{t('En lecture :')}</span>
             <button className="link mono" onClick={() => onOpenDialogue(running)}>
               {running}
             </button>
@@ -405,7 +408,7 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
         </span>
       </div>
 
-      <div className="event-log" aria-label="Journal de lecture">
+      <div className="event-log" aria-label={t('Journal de lecture')}>
         {log.filter((e) => e.kind !== 'open' || !e.fastForward).map((e) => {
           const Icon = EVENT_ICON[e.kind];
           return (

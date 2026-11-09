@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { ArrowUpRight, Upload } from 'lucide-react';
 import { colorFromString, cssColor, encodeColor, rgba } from '../engine/color';
 import { EASINGS, EASING_NAMES } from '../engine/easing';
+import { N_, t } from '../i18n';
 import { hasTranslation, translate } from '../model/project';
 import { CLEARABLE, type FieldDef } from '../model/schema';
 import { messageLines, MESSAGE_MAX_LINES, MESSAGE_MAX_WIDTH } from '../model/validate';
@@ -44,7 +45,7 @@ export function ColorField({ value, onChange }: { value: unknown; onChange: (v: 
         <span style={{ background: c ? cssColor(c) : 'transparent' }} />
         <input
           type="color"
-          aria-label="Choisir la couleur"
+          aria-label={t('Choisir la couleur')}
           value={`#${hex2(shown.r)}${hex2(shown.g)}${hex2(shown.b)}`}
           onChange={(e) => {
             const n = parseInt(e.target.value.slice(1), 16);
@@ -65,8 +66,8 @@ export function ColorField({ value, onChange }: { value: unknown; onChange: (v: 
         min={0}
         max={255}
         value={shown.a}
-        aria-label="Opacité"
-        title={`Opacité ${Math.round((shown.a / 255) * 100)} %`}
+        aria-label={t('Opacité')}
+        title={t('Opacité {n} %', { n: Math.round((shown.a / 255) * 100) })}
         onChange={(e) => set({ a: Number(e.target.value) })}
       />
     </div>
@@ -80,7 +81,7 @@ export function DialogueField({ value, onChange, placeholder }: { value: unknown
   return (
     <div className="with-action">
       <input className="mono" list="dialogue-ids" value={str} placeholder={placeholder ?? 'namespace:dialogue'} spellCheck={false} onChange={(e) => onChange(e.target.value || undefined)} />
-      <button className="icon-btn" type="button" title="Ouvrir ce dialogue" disabled={!exists} onClick={() => openDialogueById(str)}>
+      <button className="icon-btn" type="button" title={t('Ouvrir ce dialogue')} disabled={!exists} onClick={() => openDialogueById(str)}>
         <ArrowUpRight size={15} />
       </button>
     </div>
@@ -88,16 +89,16 @@ export function DialogueField({ value, onChange, placeholder }: { value: unknown
 }
 
 const BB_BUTTONS: { label: string; title: string; open: string; close: string; cls?: string }[] = [
-  { label: 'G', title: 'Gras [b]', open: '[b]', close: '[/b]', cls: 'b' },
-  { label: 'I', title: 'Italique [i]', open: '[i]', close: '[/i]', cls: 'i' },
-  { label: 'S', title: 'Souligné [u]', open: '[u]', close: '[/u]', cls: 'u' },
-  { label: 'B', title: 'Barré [s]', open: '[s]', close: '[/s]', cls: 's' },
-  { label: 'Couleur', title: '[color value=#RRGGBBAA]', open: '[color value=#FF5555FF]', close: '[/color]' },
-  { label: 'Tremble', title: '[shake intensity=2 speed=1]', open: '[shake]', close: '[/shake]' },
-  { label: 'Vague', title: '[wave amplitude=3 frequency=0.3 speed=5]', open: '[wave]', close: '[/wave]' },
-  { label: 'Tornade', title: '[tornado radius=3 speed=4]', open: '[tornado]', close: '[/tornado]' },
-  { label: 'Arc-en-ciel', title: '[rainbow speed=0.3 saturation=0.8 brightness=1]', open: '[rainbow]', close: '[/rainbow]' },
-  { label: 'Dégradé', title: '[gradient from=#RRGGBBAA to=#RRGGBBAA]', open: '[gradient from=#FFFFFFFF to=#55AAFFFF]', close: '[/gradient]' },
+  { label: N_('G'), title: N_('Gras [b]'), open: '[b]', close: '[/b]', cls: 'b' },
+  { label: N_('I'), title: N_('Italique [i]'), open: '[i]', close: '[/i]', cls: 'i' },
+  { label: N_('S'), title: N_('Souligné [u]'), open: '[u]', close: '[/u]', cls: 'u' },
+  { label: N_('B'), title: N_('Barré [s]'), open: '[s]', close: '[/s]', cls: 's' },
+  { label: N_('Couleur'), title: '[color value=#RRGGBBAA]', open: '[color value=#FF5555FF]', close: '[/color]' },
+  { label: N_('Tremble'), title: '[shake intensity=2 speed=1]', open: '[shake]', close: '[/shake]' },
+  { label: N_('Vague'), title: '[wave amplitude=3 frequency=0.3 speed=5]', open: '[wave]', close: '[/wave]' },
+  { label: N_('Tornade'), title: '[tornado radius=3 speed=4]', open: '[tornado]', close: '[/tornado]' },
+  { label: N_('Arc-en-ciel'), title: '[rainbow speed=0.3 saturation=0.8 brightness=1]', open: '[rainbow]', close: '[/rainbow]' },
+  { label: N_('Dégradé'), title: '[gradient from=#RRGGBBAA to=#RRGGBBAA]', open: '[gradient from=#FFFFFFFF to=#55AAFFFF]', close: '[/gradient]' },
 ];
 
 export function RichTextArea({ value, onChange, placeholder, measure }: { value: string; onChange: (v: string) => void; placeholder?: string; measure?: boolean }) {
@@ -118,8 +119,8 @@ export function RichTextArea({ value, onChange, placeholder, measure }: { value:
     <div className="rich">
       <div className="rich-tools">
         {BB_BUTTONS.map((b) => (
-          <button key={b.label} type="button" className={b.cls ? `bb ${b.cls}` : 'bb'} title={b.title} onClick={() => wrap(b.open, b.close)}>
-            {b.label}
+          <button key={b.label} type="button" className={b.cls ? `bb ${b.cls}` : 'bb'} title={t(b.title)} onClick={() => wrap(b.open, b.close)}>
+            {t(b.label)}
           </button>
         ))}
       </div>
@@ -127,10 +128,10 @@ export function RichTextArea({ value, onChange, placeholder, measure }: { value:
       {measure && (
         <div className="rich-meter">
           <span className={widest > MESSAGE_MAX_WIDTH ? 'over' : ''}>
-            {widest > MESSAGE_MAX_WIDTH ? `Un mot déborde : ${widest} / ${MESSAGE_MAX_WIDTH} px` : 'Retour à la ligne automatique'}
+            {widest > MESSAGE_MAX_WIDTH ? t('Un mot déborde : {n} / {max} px', { n: widest, max: MESSAGE_MAX_WIDTH }) : t('Retour à la ligne automatique')}
           </span>
           <span className={lines.length > MESSAGE_MAX_LINES ? 'over' : ''}>
-            {lines.length} / {MESSAGE_MAX_LINES} lignes
+            {t('{n} / {max} lignes', { n: lines.length, max: MESSAGE_MAX_LINES })}
           </span>
         </div>
       )}
@@ -153,7 +154,7 @@ export function TranslatableText({ value, onChange, multiline, placeholder }: { 
   return (
     <div className="translated">
       <input className="mono" value={value} spellCheck={false} onChange={(e) => onChange(e.target.value || undefined)} />
-      <div className="translated-tag">Clé de traduction · {locale}</div>
+      <div className="translated-tag">{t('Clé de traduction · {locale}', { locale })}</div>
       {multiline ? (
         <RichTextArea value={translated} measure onChange={(v) => setTranslation(value, locale, v)} />
       ) : (
@@ -172,7 +173,7 @@ function TextureField({ value, onChange, onDims }: { value: unknown; onChange: (
     <div className="texture-field">
       <div className="with-action">
         <input className="mono" list="texture-ids" value={str} spellCheck={false} placeholder="namespace:textures/gui/image.png" onChange={(e) => onChange(e.target.value || undefined)} />
-        <button className="icon-btn" type="button" title="Importer une image" onClick={() => input.current?.click()}>
+        <button className="icon-btn" type="button" title={t('Importer une image')} onClick={() => input.current?.click()}>
           <Upload size={15} />
         </button>
         <input
@@ -197,12 +198,10 @@ function TextureField({ value, onChange, onDims }: { value: unknown; onChange: (
           <span className="thumb">
             <TextureThumb bitmap={bmp} />
           </span>
-          <span>
-            Fichier : {bmp.width} × {bmp.height} px
-          </span>
+          <span>{t('Fichier : {w} × {h} px', { w: bmp.width, h: bmp.height })}</span>
           {onDims && (
             <button type="button" className="link" onClick={() => onDims(bmp.width, bmp.height)}>
-              Utiliser cette taille
+              {t('Utiliser cette taille')}
             </button>
           )}
         </div>
@@ -239,7 +238,7 @@ export function EasingSelect({ value, onChange }: { value: unknown; onChange: (v
   return (
     <div className="with-action">
       <select value={fn ? name : ''} onChange={(e) => onChange(e.target.value === 'linear' ? undefined : e.target.value)}>
-        {!fn && <option value="">{name} (inconnu)</option>}
+        {!fn && <option value="">{t('{name} (inconnu)', { name })}</option>}
         {EASING_NAMES.map((n) => (
           <option key={n} value={n}>
             {n}
@@ -256,29 +255,30 @@ export function EasingSelect({ value, onChange }: { value: unknown; onChange: (v
 export function SchemaField({ def, value, onChange, setMany }: { def: FieldDef; value: unknown; onChange: (v: unknown) => void; setMany?: (patch: Record<string, unknown>) => void }) {
   const { speakers, project, locale } = useEditor();
   const [, force] = useState(0);
+  const placeholder = def.placeholder ? t(def.placeholder) : undefined;
   const body = (() => {
     switch (def.type) {
       case 'text':
         return def.translatable ? (
-          <TranslatableText value={typeof value === 'string' ? value : ''} placeholder={def.placeholder} onChange={onChange} />
+          <TranslatableText value={typeof value === 'string' ? value : ''} placeholder={placeholder} onChange={onChange} />
         ) : (
-          <input value={typeof value === 'string' ? value : value === undefined ? '' : String(value)} placeholder={def.placeholder} spellCheck={false} onChange={(e) => onChange(e.target.value || undefined)} />
+          <input value={typeof value === 'string' ? value : value === undefined ? '' : String(value)} placeholder={placeholder} spellCheck={false} onChange={(e) => onChange(e.target.value || undefined)} />
         );
       case 'multiline':
-        return <TranslatableText multiline value={typeof value === 'string' ? value : ''} placeholder={def.placeholder} onChange={onChange} />;
+        return <TranslatableText multiline value={typeof value === 'string' ? value : ''} placeholder={placeholder} onChange={onChange} />;
       case 'number':
         return (
           <div className="number-row">
-            <NumberInput value={value} placeholder={def.placeholder} step={def.step} min={def.min} max={def.max} onChange={onChange} />
+            <NumberInput value={value} placeholder={placeholder} step={def.step} min={def.min} max={def.max} onChange={onChange} />
             {def.slider && (
-              <input type="range" min={def.min} max={def.max} step={def.step ?? 1} value={typeof value === 'number' ? value : 0} aria-label={def.label} onChange={(e) => onChange(Number(e.target.value))} />
+              <input type="range" min={def.min} max={def.max} step={def.step ?? 1} value={typeof value === 'number' ? value : 0} aria-label={t(def.label)} onChange={(e) => onChange(Number(e.target.value))} />
             )}
           </div>
         );
       case 'bool':
         return (
           <label className="check">
-            <input type="checkbox" checked={value === true} onChange={(e) => onChange(e.target.checked ? true : undefined)} /> Oui
+            <input type="checkbox" checked={value === true} onChange={(e) => onChange(e.target.checked ? true : undefined)} /> {t('Oui')}
           </label>
         );
       case 'select':
@@ -298,7 +298,7 @@ export function SchemaField({ def, value, onChange, setMany }: { def: FieldDef; 
       case 'speaker':
         return (
           <div className="with-action">
-            <input className="mono" list="speaker-ids" value={typeof value === 'string' ? value : ''} placeholder="namespace:personnage" spellCheck={false} onChange={(e) => onChange(e.target.value || undefined)} />
+            <input className="mono" list="speaker-ids" value={typeof value === 'string' ? value : ''} placeholder={t('namespace:personnage')} spellCheck={false} onChange={(e) => onChange(e.target.value || undefined)} />
             {typeof value === 'string' && speakers.some((s) => s.id === value) && (
               <span className="speaker-chip">{translate(project, locale, speakers.find((s) => s.id === value)!.name)}</span>
             )}
@@ -309,7 +309,7 @@ export function SchemaField({ def, value, onChange, setMany }: { def: FieldDef; 
       case 'actionClass':
         return (
           <select value={typeof value === 'string' ? value : ''} onChange={(e) => onChange(e.target.value || undefined)}>
-            <option value="">Tout effacer</option>
+            <option value="">{t('Tout effacer')}</option>
             {typeof value === 'string' && value && !CLEARABLE.includes(value) && <option value={value}>{value}</option>}
             {CLEARABLE.map((id) => (
               <option key={id} value={id}>
@@ -323,7 +323,7 @@ export function SchemaField({ def, value, onChange, setMany }: { def: FieldDef; 
     }
   })();
   return (
-    <Field label={def.label} hint={def.hint} half={def.half}>
+    <Field label={t(def.label)} hint={def.hint ? t(def.hint) : undefined} half={def.half}>
       {body}
     </Field>
   );
@@ -345,7 +345,7 @@ export function JsonField({ value, onChange }: { value: unknown; onChange: (v: u
             onChange(JSON.parse(e.target.value));
             setError('');
           } catch (err) {
-            setError(err instanceof Error ? err.message : 'JSON invalide');
+            setError(err instanceof Error ? err.message : t('JSON invalide'));
           }
         }}
       />

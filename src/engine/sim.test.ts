@@ -1,8 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { setLang } from '../i18n';
 import { combineEffects, flattenBBCode, layoutChars } from './bbcode';
 import { colorFromString, encodeColor, lerpColor, WHITE } from './color';
 import { MessageAction, NULL_PAINTER, parseResourceLocation, PreviewRun, type ImageDraw, type Painter, type RawAction, type SimWorld } from './sim';
+
+beforeAll(() => setLang('fr'));
 
 const world = (dialogues: Record<string, RawAction[]>, lang: Record<string, string> = {}): SimWorld => ({
   dialogue: (id) => dialogues[id],

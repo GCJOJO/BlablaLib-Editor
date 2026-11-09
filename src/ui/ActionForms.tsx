@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp, Plus, Trash2, X } from 'lucide-react';
 import type { RawAction } from '../engine/sim';
+import { N_, t } from '../i18n';
 import { actionDef, RAW_ACTIONS } from '../model/schema';
 import { ColorField, DialogueField, EasingSelect, Field, JsonField, NumberInput, SchemaField, TranslatableText } from './Fields';
 
@@ -41,31 +42,31 @@ function ChoiceForm({ raw, patch }: { raw: RawAction; patch: Patch }) {
     <div className="choices">
       {legacy && (
         <div className="notice">
-          Ce choix utilise l'ancien format (option1, next1…), encore accepté par le mod.
+          {t("Ce choix utilise l'ancien format (option1, next1…), encore accepté par le mod.")}
           <button type="button" className="link" onClick={convertLegacy}>
-            Convertir au format « choices »
+            {t('Convertir au format « choices »')}
           </button>
         </div>
       )}
       {choices.map((c, i) => (
         <div className="choice-card" key={i}>
           <div className="choice-head">
-            <span>Option {i + 1}</span>
+            <span>{t('Option {n}', { n: i + 1 })}</span>
             <span className="spacer" />
-            <button type="button" className="icon-btn" title="Monter" disabled={i === 0} onClick={() => edit((l) => l.splice(i - 1, 0, l.splice(i, 1)[0]))}>
+            <button type="button" className="icon-btn" title={t('Monter')} disabled={i === 0} onClick={() => edit((l) => l.splice(i - 1, 0, l.splice(i, 1)[0]))}>
               <ChevronUp size={14} />
             </button>
-            <button type="button" className="icon-btn" title="Descendre" disabled={i === choices.length - 1} onClick={() => edit((l) => l.splice(i + 1, 0, l.splice(i, 1)[0]))}>
+            <button type="button" className="icon-btn" title={t('Descendre')} disabled={i === choices.length - 1} onClick={() => edit((l) => l.splice(i + 1, 0, l.splice(i, 1)[0]))}>
               <ChevronDown size={14} />
             </button>
-            <button type="button" className="icon-btn" title="Supprimer" onClick={() => edit((l) => void l.splice(i, 1))}>
+            <button type="button" className="icon-btn" title={t('Supprimer')} onClick={() => edit((l) => void l.splice(i, 1))}>
               <Trash2 size={14} />
             </button>
           </div>
-          <Field label="Libellé">
+          <Field label={t('Libellé')}>
             <TranslatableText value={typeof c.name === 'string' ? c.name : ''} onChange={(v) => edit((l) => void (l[i].name = v ?? ''), `choice-name-${i}`)} />
           </Field>
-          <Field label="Dialogue suivant">
+          <Field label={t('Dialogue suivant')}>
             <DialogueField
               value={c.next}
               onChange={(v) =>
@@ -78,16 +79,16 @@ function ChoiceForm({ raw, patch }: { raw: RawAction; patch: Patch }) {
               }
             />
           </Field>
-          <Field label="Dialogue sauvegardé" hint="Celui que /dialogue play rouvrira. Requis, sinon le clic ferme seulement le dialogue.">
+          <Field label={t('Dialogue sauvegardé')} hint={t('Celui que /dialogue play rouvrira. Requis, sinon le clic ferme seulement le dialogue.')}>
             <DialogueField value={c.save} onChange={(v) => edit((l) => setKey(l[i], 'save', v), `choice-save-${i}`)} />
           </Field>
-          <Field label="Action serveur" hint="Texte libre, transmis à l'événement DIALOGUE_CHOICE_MADE.">
+          <Field label={t('Action serveur')} hint={t("Texte libre, transmis à l'événement DIALOGUE_CHOICE_MADE.")}>
             <input value={typeof c.action === 'string' ? c.action : ''} spellCheck={false} onChange={(e) => edit((l) => setKey(l[i], 'action', e.target.value || undefined), `choice-action-${i}`)} />
           </Field>
         </div>
       ))}
       <button type="button" className="btn ghost" onClick={() => edit((l) => void l.push({ name: `Option ${l.length + 1}` }))}>
-        <Plus size={14} /> Ajouter une option
+        <Plus size={14} /> {t('Ajouter une option')}
       </button>
     </div>
   );
@@ -100,40 +101,40 @@ type Track = { key: string; label: string; defaults: RawAction; fields: { key: s
 const TRACKS: Track[] = [
   {
     key: 'position',
-    label: 'Position',
+    label: N_('Position'),
     defaults: { time: 20, x_start: 50, x_end: 50 },
     fields: [
-      { key: 'x_start', label: 'X début (%)' },
-      { key: 'x_end', label: 'X fin (%)' },
-      { key: 'y_start', label: 'Y début (%)' },
-      { key: 'y_end', label: 'Y fin (%)' },
+      { key: 'x_start', label: N_('X début (%)') },
+      { key: 'x_end', label: N_('X fin (%)') },
+      { key: 'y_start', label: N_('Y début (%)') },
+      { key: 'y_end', label: N_('Y fin (%)') },
     ],
   },
   {
     key: 'rotation',
-    label: 'Rotation',
+    label: N_('Rotation'),
     defaults: { time: 20, from: 0, to: 360 },
     fields: [
-      { key: 'from', label: 'De (°)' },
-      { key: 'to', label: 'À (°)' },
+      { key: 'from', label: N_('De (°)') },
+      { key: 'to', label: N_('À (°)') },
     ],
   },
   {
     key: 'scale',
-    label: 'Échelle',
+    label: N_('Échelle'),
     defaults: { time: 20, from: 1, to: 2 },
     fields: [
-      { key: 'from', label: 'De', step: 0.1 },
-      { key: 'to', label: 'À', step: 0.1 },
+      { key: 'from', label: N_('De'), step: 0.1 },
+      { key: 'to', label: N_('À'), step: 0.1 },
     ],
   },
   {
     key: 'color',
-    label: 'Couleur',
+    label: N_('Couleur'),
     defaults: { time: 20, from: '#FFFFFF00', to: '#FFFFFFFF' },
     fields: [
-      { key: 'from', label: 'De', color: true },
-      { key: 'to', label: 'À', color: true },
+      { key: 'from', label: N_('De'), color: true },
+      { key: 'to', label: N_('À'), color: true },
     ],
   },
 ];
@@ -141,30 +142,30 @@ const TRACKS: Track[] = [
 function ImageMoveForm({ raw, patch }: { raw: RawAction; patch: Patch }) {
   return (
     <div className="tracks">
-      <p className="field-hint">Seule l'opacité de la couleur est appliquée à l'image par le mod. La teinte est ignorée.</p>
-      {TRACKS.map((t) => {
-        const data = raw[t.key] as RawAction | undefined;
+      <p className="field-hint">{t("Seule l'opacité de la couleur est appliquée à l'image par le mod. La teinte est ignorée.")}</p>
+      {TRACKS.map((track) => {
+        const data = raw[track.key] as RawAction | undefined;
         const on = !!data;
         return (
-          <div className={on ? 'track on' : 'track'} key={t.key}>
+          <div className={on ? 'track on' : 'track'} key={track.key}>
             <label className="track-head">
-              <input type="checkbox" checked={on} onChange={(e) => patch((r) => setKey(r, t.key, e.target.checked ? { ...t.defaults } : undefined))} />
-              {t.label}
+              <input type="checkbox" checked={on} onChange={(e) => patch((r) => setKey(r, track.key, e.target.checked ? { ...track.defaults } : undefined))} />
+              {t(track.label)}
             </label>
             {on && (
               <div className="grid-form">
-                <Field label="Durée (ticks)" half>
-                  <NumberInput value={data.time} onChange={(v) => patch((r) => setKey(r[t.key] as RawAction, 'time', v), `${t.key}-time`)} />
+                <Field label={t('Durée (ticks)')} half>
+                  <NumberInput value={data.time} onChange={(v) => patch((r) => setKey(r[track.key] as RawAction, 'time', v), `${track.key}-time`)} />
                 </Field>
-                <Field label="Easing" half>
-                  <EasingSelect value={data.easing} onChange={(v) => patch((r) => setKey(r[t.key] as RawAction, 'easing', v))} />
+                <Field label={t('Easing')} half>
+                  <EasingSelect value={data.easing} onChange={(v) => patch((r) => setKey(r[track.key] as RawAction, 'easing', v))} />
                 </Field>
-                {t.fields.map((f) => (
-                  <Field key={f.key} label={f.label} half={!f.color}>
+                {track.fields.map((f) => (
+                  <Field key={f.key} label={t(f.label)} half={!f.color}>
                     {f.color ? (
-                      <ColorField value={data[f.key]} onChange={(v) => patch((r) => setKey(r[t.key] as RawAction, f.key, v), `${t.key}-${f.key}`)} />
+                      <ColorField value={data[f.key]} onChange={(v) => patch((r) => setKey(r[track.key] as RawAction, f.key, v), `${track.key}-${f.key}`)} />
                     ) : (
-                      <NumberInput value={data[f.key]} step={f.step} placeholder="inchangé" onChange={(v) => patch((r) => setKey(r[t.key] as RawAction, f.key, v), `${t.key}-${f.key}`)} />
+                      <NumberInput value={data[f.key]} step={f.step} placeholder={t('inchangé')} onChange={(v) => patch((r) => setKey(r[track.key] as RawAction, f.key, v), `${track.key}-${f.key}`)} />
                     )}
                   </Field>
                 ))}
@@ -184,10 +185,10 @@ function NpcForm({ raw, patch }: { raw: RawAction; patch: Patch }) {
   const defaultFor: Record<string, unknown> = { bool: true, number: 0, string: '', resource_location: 'minecraft:stone' };
   return (
     <div className="grid-form">
-      <Field label="PNJ" half hint="Numéro donné par BlablaLib.setPlayerNPC.">
+      <Field label={t('PNJ')} half hint={t('Numéro donné par BlablaLib.setPlayerNPC.')}>
         <NumberInput value={raw.npc} step={1} placeholder="-1" onChange={(v) => patch((r) => setKey(r, 'npc', v), 'npc')} />
       </Field>
-      <Field label="Type" half>
+      <Field label={t('Type')} half>
         <select value={type} onChange={(e) => patch((r) => { r.type = e.target.value; r.value = defaultFor[e.target.value]; })}>
           {Object.keys(defaultFor).map((t) => (
             <option key={t} value={t}>
@@ -196,10 +197,10 @@ function NpcForm({ raw, patch }: { raw: RawAction; patch: Patch }) {
           ))}
         </select>
       </Field>
-      <Field label="Variable" half>
+      <Field label={t('Variable')} half>
         <input value={typeof raw.variable === 'string' ? raw.variable : ''} spellCheck={false} onChange={(e) => patch((r) => void (r.variable = e.target.value), 'npc-var')} />
       </Field>
-      <Field label="Valeur" half>
+      <Field label={t('Valeur')} half>
         {type === 'bool' ? (
           <select value={String(raw.value)} onChange={(e) => patch((r) => void (r.value = e.target.value === 'true'))}>
             <option value="true">true</option>
@@ -227,13 +228,13 @@ export function ActionForm({ raw, patch }: { raw: RawAction; patch: Patch }) {
   const def = actionDef(raw);
   if (!def) {
     const rawDef = RAW_ACTIONS.find((r) => r.id === String(raw.action).replace('blablalib:', ''));
-    if (rawDef) return <p className="field-hint">{rawDef.description} Aucun réglage.</p>;
+    if (rawDef) return <p className="field-hint">{t(rawDef.description)} {t('Aucun réglage.')}</p>;
     return (
       <div className="grid-form">
-        <Field label="Nom de l'action" hint="Inconnue de BlablaLib. Elle peut venir d'un autre mod (registerCustomAction) : la preview la passe.">
+        <Field label={t("Nom de l'action")} hint={t("Inconnue de BlablaLib. Elle peut venir d'un autre mod (registerCustomAction) : la preview la passe.")}>
           <input className="mono" value={String(raw.action ?? '')} spellCheck={false} onChange={(e) => patch((r) => void (r.action = e.target.value), 'unknown-name')} />
         </Field>
-        <Field label="JSON complet">
+        <Field label={t('JSON complet')}>
           <JsonField
             key={String(raw.action)}
             value={raw}
@@ -273,9 +274,9 @@ export function ActionForm({ raw, patch }: { raw: RawAction; patch: Patch }) {
       {def.custom === 'npc' && <NpcForm raw={raw} patch={patch} />}
       {stray.length > 0 && (
         <div className="stray">
-          <span>Champs que le mod ne lit pas :</span>
+          <span>{t('Champs que le mod ne lit pas :')}</span>
           {stray.map((k) => (
-            <button key={k} type="button" className="stray-chip" title="Retirer ce champ" onClick={() => patch((r) => void delete r[k])}>
+            <button key={k} type="button" className="stray-chip" title={t('Retirer ce champ')} onClick={() => patch((r) => void delete r[k])}>
               {k} <X size={12} />
             </button>
           ))}

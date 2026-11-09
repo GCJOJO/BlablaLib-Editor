@@ -1,6 +1,7 @@
 // Ouverture et enregistrement : File System Access (Chrome, Edge), ou import / téléchargement ailleurs.
 
 import { strToU8, zipSync } from 'fflate';
+import { t } from '../i18n';
 import {
   datapackFilePath,
   datapackLangPath,
@@ -50,7 +51,7 @@ export async function buildProject(name: string, entries: { path: string; read: 
       m = TEXTURE_RE.exec(entry.path);
       if (m) textures.set(`${m[1]}:${m[2]}`, await entry.read());
     } catch (e) {
-      errors.push(`${entry.path} : ${e instanceof Error ? e.message : e}`);
+      errors.push(t('{file} : {error}', { file: entry.path, error: e instanceof Error ? e.message : String(e) }));
     }
   }
   return { project, textures, errors };
@@ -229,7 +230,7 @@ export async function loadSample(): Promise<LoadedProject> {
     'assets/blablalib/textures/gui/woof.png',
   ];
   return buildProject(
-    'Exemple BlablaLib',
+    t('Exemple BlablaLib'),
     paths.map((path) => ({
       path,
       read: async () => {

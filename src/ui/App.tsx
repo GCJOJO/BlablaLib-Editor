@@ -48,7 +48,9 @@ import {
   type Textures,
 } from '../model/io';
 import { validateProject } from '../model/validate';
+import { t, useLang } from '../i18n';
 import { EditorCtx, type EditorContext } from './context';
+import { OptionsMenu } from './OptionsMenu';
 import { PreviewPanel, type PlayStatus } from './PreviewPanel';
 import { Sidebar, type View } from './Sidebar';
 import { LangView, SpeakersView } from './TablesViews';
@@ -70,6 +72,7 @@ const snapshotOf = (p: Project) => {
 const HISTORY_LIMIT = 200;
 
 export function App() {
+  const lang = useLang();
   const [project, setProject] = useState<Project | null>(null);
   const historyRef = useRef<{ past: Project[]; future: Project[]; lastKey?: string; lastAt: number }>({ past: [], future: [], lastAt: 0 });
   const [, forceHistory] = useState(0);
@@ -112,7 +115,7 @@ export function App() {
       setView('dialogue');
       const locales = localesOf(loaded.project);
       setLocale(locales.includes('fr_fr') ? 'fr_fr' : (locales[0] ?? 'en_us'));
-      if (loaded.errors.length) notify('error', `${loaded.errors.length} fichier(s) illisible(s) : ${loaded.errors[0]}`);
+      if (loaded.errors.length) notify('error', t('{n} fichier(s) illisible(s) : {first}', { n: loaded.errors.length, first: loaded.errors[0] }));
     },
     [notify],
   );
@@ -243,7 +246,7 @@ export function App() {
   }, [project, selection]);
 
   const textureIds = useMemo(() => [...textures.keys()].sort(), [textures]);
-  const problems = useMemo(() => (project ? validateProject(project, new Set(textureIds), locale) : []), [project, textureIds, locale]);
+  const problems = useMemo(() => (project ? validateProject(project, new Set(textureIds), locale) : []), [project, textureIds, locale, lang]);
   const world = useMemo(() => (project ? makeWorld(project, locale) : null), [project, locale]);
   const dirty = useMemo(() => {
     if (!project) return { files: [], langs: [] };
@@ -328,11 +331,11 @@ export function App() {
     const entry = file.dialogues.find((d) => d.uid === dialogueUid)!;
     if (entry.key === key) return;
     if (key === 'speakers') {
-      notify('error', '« speakers » est réservé à la liste des personnages.');
+      notify('error', t('« speakers » est réservé à la liste des personnages.'));
       return;
     }
     if (file.dialogues.some((d) => d.key === key)) {
-      notify('error', `Un dialogue « ${key} » existe déjà dans ce fichier.`);
+      notify('error', t('Un dialogue « {key} » existe déjà dans ce fichier.', { key }));
       return;
     }
     const oldId = dialogueId(file, entry);
@@ -360,7 +363,7 @@ export function App() {
         }
       }
     });
-    if (refs) notify('ok', `Renommé, ${refs} référence(s) mise(s) à jour.`);
+    if (refs) notify('ok', t('Renommé, {n} référence(s) mise(s) à jour.', { n: refs }));
   };
 
   const addDialogue = (fileUid: string) => {
@@ -381,9 +384,10 @@ export function App() {
       const f = p.files.find((x) => x.uid === fileUid)!;
       const i = f.dialogues.findIndex((d) => d.uid === dialogueUid);
       const src = f.dialogues[i];
-      let key = `${src.key}_copie`;
+      const suffix = t('copie');
+      let key = `${src.key}_${suffix}`;
       let n = 2;
-      while (f.dialogues.some((d) => d.key === key)) key = `${src.key}_copie_${n++}`;
+      while (f.dialogues.some((d) => d.key === key)) key = `${src.key}_${suffix}_${n++}`;
       f.dialogues.splice(i + 1, 0, { uid: newUid, key, actions: src.actions.map((a) => ({ uid: uid(), raw: structuredClone(a.raw) })) });
     });
     setSelection({ fileUid, dialogueUid: newUid, actionUid: null });
@@ -392,7 +396,7 @@ export function App() {
   const deleteDialogue = (fileUid: string, dialogueUid: string) => {
     const file = project?.files.find((f) => f.uid === fileUid);
     const d = file?.dialogues.find((x) => x.uid === dialogueUid);
-    if (!d || !window.confirm(`Supprimer le dialogue « ${d.key} » ? (Ctrl+Z pour annuler)`)) return;
+    if (!d || !window.confirm(t('Supprimer le dialogue « {key} » ? (Ctrl+Z pour annuler)', { key: d.key }))) return;
     mutate((p) => {
       const f = p.files.find((x) => x.uid === fileUid)!;
       f.dialogues = f.dialogues.filter((x) => x.uid !== dialogueUid);
@@ -403,7 +407,7 @@ export function App() {
   const deleteFile = (fileUid: string) => {
     const file = project?.files.find((f) => f.uid === fileUid);
     if (!file) return;
-    if (!window.confirm(`Retirer ${file.path} du projet ? Le fichier sur le disque n'est pas supprimé. (Ctrl+Z pour annuler)`)) return;
+    if (!window.confirm(t("Retirer {path} du projet ? Le fichier sur le disque n'est pas supprimé. (Ctrl+Z pour annuler)", { path: file.path }))) return;
     mutate((p) => void (p.files = p.files.filter((f) => f.uid !== fileUid)));
     if (selection?.fileUid === fileUid) setSelection(null);
   };
@@ -412,7 +416,7 @@ export function App() {
     const newFileUid = uid();
     const newDialogueUid = uid();
     mutate((p) => {
-      const ns = current?.file.namespace ?? p.files[0]?.namespace ?? 'mon_datapack';
+      const ns = current?.file.namespace ?? p.files[0]?.namespace ?? t('mon_datapack');
       let n = p.files.length + 1;
       while (p.files.some((f) => f.namespace === ns && f.path === `dialogues_${n}.json`)) n++;
       p.files.push({ uid: newFileUid, namespace: ns, path: `dialogues_${n}.json`, speakers: [], dialogues: [{ uid: newDialogueUid, key: 'intro', actions: [] }], extras: {} });
@@ -423,7 +427,7 @@ export function App() {
 
   // --- Ouvrir / enregistrer ---------------------------------------------------------------------
 
-  const confirmDiscard = () => dirtyCount === 0 || window.confirm(`${dirtyCount} fichier(s) non enregistré(s) seront perdus. Continuer ?`);
+  const confirmDiscard = () => dirtyCount === 0 || window.confirm(t('{n} fichier(s) non enregistré(s) seront perdus. Continuer ?', { n: dirtyCount }));
 
   const openFolder = async () => {
     if (!confirmDiscard()) return;
@@ -436,13 +440,13 @@ export function App() {
       setBusy(true);
       const loaded = await loadFolder(handle);
       if (loaded.project.files.length === 0) {
-        notify('error', 'Aucun fichier data/<namespace>/dialogues/*.json dans ce dossier.');
+        notify('error', t('Aucun fichier data/<namespace>/dialogues/*.json dans ce dossier.'));
         return;
       }
       applyLoaded(loaded, handle);
-      notify('ok', `${loaded.project.files.length} fichier(s) de dialogues ouverts depuis ${handle.name}.`);
+      notify('ok', t('{n} fichier(s) de dialogues ouverts depuis {folder}.', { n: loaded.project.files.length, folder: handle.name }));
     } catch (e) {
-      if (!(e instanceof DOMException && e.name === 'AbortError')) notify('error', `Ouverture impossible : ${e instanceof Error ? e.message : e}`);
+      if (!(e instanceof DOMException && e.name === 'AbortError')) notify('error', t('Ouverture impossible : {error}', { error: e instanceof Error ? e.message : String(e) }));
     } finally {
       setBusy(false);
     }
@@ -453,9 +457,9 @@ export function App() {
     const entries = [...list]
       .map((f) => ({ path: f.webkitRelativePath || f.name, read: async () => f as Blob }))
       .filter((e) => isRelevantPath(e.path));
-    const loaded = await buildProject(list[0].webkitRelativePath.split('/')[0] || 'Projet', entries);
+    const loaded = await buildProject(list[0].webkitRelativePath.split('/')[0] || t('Projet'), entries);
     if (loaded.project.files.length === 0) {
-      notify('error', 'Aucun fichier data/<namespace>/dialogues/*.json dans ce dossier.');
+      notify('error', t('Aucun fichier data/<namespace>/dialogues/*.json dans ce dossier.'));
       return;
     }
     applyLoaded(loaded, null);
@@ -463,7 +467,7 @@ export function App() {
 
   const importJsonFiles = async (list: FileList | null) => {
     if (!list?.length || !project) return;
-    const ns = window.prompt('Namespace de ces dialogues :', current?.file.namespace ?? project.files[0]?.namespace ?? 'mon_datapack');
+    const ns = window.prompt(t('Namespace de ces dialogues :'), current?.file.namespace ?? project.files[0]?.namespace ?? t('mon_datapack'));
     if (!ns) return;
     let firstNew: { fileUid: string; dialogueUid: string } | null = null;
     const added: DialogueFile[] = [];
@@ -473,14 +477,14 @@ export function App() {
         added.push(parsed);
         if (!firstNew && parsed.dialogues[0]) firstNew = { fileUid: parsed.uid, dialogueUid: parsed.dialogues[0].uid };
       } catch (e) {
-        notify('error', `${f.name} : ${e instanceof Error ? e.message : e}`);
+        notify('error', t('{file} : {error}', { file: f.name, error: e instanceof Error ? e.message : String(e) }));
       }
     }
     if (added.length) {
       mutate((p) => void p.files.push(...structuredClone(added)));
       if (firstNew) setSelection({ ...firstNew, actionUid: null });
       setView('dialogue');
-      notify('ok', `${added.length} fichier(s) importé(s).`);
+      notify('ok', t('{n} fichier(s) importé(s).', { n: added.length }));
     }
   };
 
@@ -490,16 +494,16 @@ export function App() {
       await downloadDatapackZip(project, textures);
       setSaved(snapshotOf(project));
       setNewTextures(new Map());
-      notify('ok', 'Datapack téléchargé.');
+      notify('ok', t('Datapack téléchargé.'));
       return;
     }
     if (dirtyCount === 0) {
-      notify('ok', 'Tout est déjà enregistré.');
+      notify('ok', t('Tout est déjà enregistré.'));
       return;
     }
     try {
       if (!(await ensurePermission(root))) {
-        notify('error', 'Accès au dossier refusé par le navigateur.');
+        notify('error', t('Accès au dossier refusé par le navigateur.'));
         return;
       }
       // saveToFolder complète les chemins d'origine : on travaille sur une copie du projet.
@@ -510,9 +514,9 @@ export function App() {
       setProject(next);
       setSaved(snapshotOf(next));
       setNewTextures(new Map());
-      notify('ok', `${written.length} fichier(s) enregistré(s) dans ${root.name}.`);
+      notify('ok', t('{n} fichier(s) enregistré(s) dans {folder}.', { n: written.length, folder: root.name }));
     } catch (e) {
-      notify('error', `Enregistrement impossible : ${e instanceof Error ? e.message : e}`);
+      notify('error', t('Enregistrement impossible : {error}', { error: e instanceof Error ? e.message : String(e) }));
     }
   };
 
@@ -528,7 +532,7 @@ export function App() {
   if (!project || !ctx || !world) {
     return (
       <div className="loading">
-        <Sparkles size={18} /> Chargement…
+        <Sparkles size={18} /> {t('Chargement…')}
       </div>
     );
   }
@@ -552,21 +556,21 @@ export function App() {
           </div>
           <input
             className="project-name"
-            aria-label="Nom du projet"
+            aria-label={t('Nom du projet')}
             value={project.name}
             onChange={(e) => mutate((p) => void (p.name = e.target.value), 'project-name')}
           />
           <div className="top-group">
-            <button className="btn icon" title="Annuler (Ctrl+Z)" disabled={historyRef.current.past.length === 0} onClick={undo}>
+            <button className="btn icon" title={t('Annuler (Ctrl+Z)')} disabled={historyRef.current.past.length === 0} onClick={undo}>
               <Undo2 size={15} />
             </button>
-            <button className="btn icon" title="Rétablir (Ctrl+Y)" disabled={historyRef.current.future.length === 0} onClick={redo}>
+            <button className="btn icon" title={t('Rétablir (Ctrl+Y)')} disabled={historyRef.current.future.length === 0} onClick={redo}>
               <Redo2 size={15} />
             </button>
           </div>
           <span className="spacer" />
           {locales.length > 0 && (
-            <select className="locale" aria-label="Langue de la preview" value={locale} onChange={(e) => setLocale(e.target.value)}>
+            <select className="locale" aria-label={t('Langue de la preview')} title={t('Langue de la preview')} value={locale} onChange={(e) => setLocale(e.target.value)}>
               {locales.map((l) => (
                 <option key={l} value={l}>
                   {l}
@@ -574,39 +578,42 @@ export function App() {
               ))}
             </select>
           )}
-          <button className={showProblems ? 'problem-counts on' : 'problem-counts'} aria-expanded={showProblems} title="Afficher les remarques" onClick={() => setShowProblems(!showProblems)}>
+          <button className={showProblems ? 'problem-counts on' : 'problem-counts'} aria-expanded={showProblems} title={t('Afficher les remarques')} onClick={() => setShowProblems(!showProblems)}>
             <span className="sev error"><XCircle size={14} /> {counts.error}</span>
             <span className="sev warning"><AlertTriangle size={14} /> {counts.warning}</span>
             <span className="sev info"><Info size={14} /> {counts.info}</span>
           </button>
           <button
             className="btn icon"
-            title="Nouveau projet vide"
+            title={t('Nouveau projet vide')}
             onClick={() => {
               if (confirmDiscard()) applyLoaded({ project: emptyProject(), textures: new Map(), errors: [] }, null, false);
             }}
           >
             <FilePlus2 size={15} />
           </button>
-          <button className="btn" onClick={openFolder} disabled={busy} title="Ouvrir un datapack ou le dossier resources d'un mod">
-            <FolderOpen size={15} /> Ouvrir un dossier
+          <button className="btn" onClick={openFolder} disabled={busy} title={t("Ouvrir un datapack ou le dossier resources d'un mod")}>
+            <FolderOpen size={15} /> {t('Ouvrir un dossier')}
           </button>
-          <button className="btn icon" title="Importer des fichiers JSON de dialogues" onClick={() => fileInput.current?.click()}>
+          <button className="btn icon" title={t('Importer des fichiers JSON de dialogues')} onClick={() => fileInput.current?.click()}>
             <FileUp size={15} />
           </button>
           {current && (
-            <button className="btn icon" title={`Télécharger ${current.file.path}`} onClick={() => downloadFile(current.file)}>
+            <button className="btn icon" title={t('Télécharger {path}', { path: current.file.path })} onClick={() => downloadFile(current.file)}>
               <FileDown size={15} />
             </button>
           )}
-          <button className="btn icon" title="Télécharger le datapack complet (.zip)" onClick={() => downloadDatapackZip(project, textures)}>
-            <Download size={15} />
-          </button>
-          <button id="save-button" className="btn primary" onClick={save} title={root ? `Écrire dans ${root.name}` : 'Aucun dossier ouvert : télécharge le datapack'}>
-            <Save size={15} />
-            {root ? 'Enregistrer' : 'Exporter'}
+          {root && (
+            <button className="btn icon" title={t('Exporter le datapack complet (.zip)')} onClick={() => downloadDatapackZip(project, textures)}>
+              <Download size={15} />
+            </button>
+          )}
+          <button id="save-button" className="btn primary" onClick={save} title={root ? t('Écrire dans {folder}', { folder: root.name }) : t('Télécharger le datapack complet (.zip)')}>
+            {root ? <Save size={15} /> : <Download size={15} />}
+            {root ? t('Enregistrer') : t('Exporter')}
             {dirtyCount > 0 && <span className="badge">{dirtyCount}</span>}
           </button>
+          <OptionsMenu />
           <input ref={fileInput} type="file" accept=".json,application/json" multiple hidden onChange={(e) => { importJsonFiles(e.target.files); e.target.value = ''; }} />
           <input ref={folderInput} type="file" hidden {...({ webkitdirectory: '' } as object)} onChange={(e) => { importFolderFallback(e.target.files); e.target.value = ''; }} />
         </header>
@@ -664,7 +671,7 @@ export function App() {
                 />
               ) : (
                 <div className="empty big">
-                  <p>Sélectionnez un dialogue à gauche, ou ouvrez un dossier.</p>
+                  <p>{t('Sélectionnez un dialogue à gauche, ou ouvrez un dossier.')}</p>
                 </div>
               ))}
             {view === 'speakers' && <SpeakersView project={project} locale={locale} mutate={mutate} />}
@@ -683,9 +690,9 @@ export function App() {
               onOpenDialogue={openDialogueById}
             />
             {showProblems && (
-              <section className="problems-panel" aria-label="Remarques">
-                <h3>Remarques sur le projet</h3>
-                {problems.length === 0 && <p className="muted">Rien à signaler.</p>}
+              <section className="problems-panel" aria-label={t('Remarques')}>
+                <h3>{t('Remarques sur le projet')}</h3>
+                {problems.length === 0 && <p className="muted">{t('Rien à signaler.')}</p>}
                 {problems.map((p, i) => (
                   <ProblemRow
                     key={i}

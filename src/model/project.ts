@@ -1,6 +1,7 @@
 // Modèle du projet et lecture / écriture des fichiers de datapack.
 
 import { parseResourceLocation, type RawAction, type SimSpeaker, type SimWorld } from '../engine/sim';
+import { t } from '../i18n';
 
 export interface ActionEntry {
   uid: string;
@@ -82,7 +83,7 @@ export function parseLenientJson(text: string): unknown {
 
 export function parseDialogueFile(text: string, namespace: string, path: string, originPath?: string): DialogueFile {
   const json = parseLenientJson(text);
-  if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('Le fichier doit contenir un objet JSON.');
+  if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error(t('Le fichier doit contenir un objet JSON.'));
   const file: DialogueFile = { uid: uid(), namespace, path, originPath, speakers: [], dialogues: [], extras: {} };
   for (const [key, value] of Object.entries(json as Record<string, unknown>)) {
     if (key === 'speakers') {
@@ -170,20 +171,21 @@ export function makeWorld(project: Project, locale: string): SimWorld {
 export const SAMPLE_PROJECT_BASE = 'sample/';
 
 export function emptyProject(): Project {
-  const ns = 'mon_datapack';
+  const ns = t('mon_datapack');
+  const narrator = t('narrateur');
   return {
-    name: 'Nouveau projet',
+    name: t('Nouveau projet'),
     files: [
       {
         uid: uid(),
         namespace: ns,
         path: 'dialogues.json',
-        speakers: [{ id: `${ns}:narrateur`, name: 'Narrateur', color: '#FFFFFFFF', sounds: [] }],
+        speakers: [{ id: `${ns}:${narrator}`, name: t('Narrateur'), color: '#FFFFFFFF', sounds: [] }],
         dialogues: [
           {
             uid: uid(),
             key: 'intro',
-            actions: [{ uid: uid(), raw: { action: 'blablalib:message', speaker: `${ns}:narrateur`, text: 'Bonjour !' } }],
+            actions: [{ uid: uid(), raw: { action: 'blablalib:message', speaker: `${ns}:${narrator}`, text: t('Bonjour !') } }],
           },
         ],
         extras: {},

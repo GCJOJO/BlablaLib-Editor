@@ -220,6 +220,32 @@ button:disabled {
   border-bottom: 1px solid var(--line);
   flex-wrap: wrap;
 }
+.options {
+  position: relative;
+  display: flex;
+}
+.options-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: min(280px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: var(--bg-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.options-menu h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+}
+.options-menu .field-hint {
+  margin: 0;
+}
 .brand {
   display: flex;
   align-items: center;
@@ -289,6 +315,7 @@ select.locale {
 .preview-col {
   min-width: 0;
   min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   background: var(--bg-2);
@@ -1037,7 +1064,7 @@ h2.mono {
   flex-direction: column;
 }
 .problems-panel {
-  flex: 1 1 40%;
+  flex: 1 1 0;
   min-height: 140px;
   overflow: auto;
   padding: 10px 12px;
@@ -1050,9 +1077,10 @@ h2.mono {
 
 /* --- Preview ------------------------------------------------------------- */
 
+/* Ne descend jamais sous la hauteur de l'image et des contrôles : le journal et les remarques se partagent le reste. */
 .preview {
-  flex: 1 1 60%;
-  min-height: 0;
+  flex: 1 1 auto;
+  min-height: min-content;
   display: flex;
   flex-direction: column;
 }
@@ -1134,6 +1162,8 @@ h2.mono {
 .event-log {
   flex: 1;
   min-height: 70px;
+  /* Un long journal défile au lieu d'agrandir la preview. */
+  contain: size;
   overflow: auto;
   padding: 4px 10px 8px;
   font-size: 12px;
@@ -1283,6 +1313,7 @@ input.filter {
     border-bottom: 1px solid var(--line);
   }
   .event-log {
+    contain: none;
     max-height: 160px;
   }
   .sidebar,

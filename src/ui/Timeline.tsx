@@ -32,6 +32,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { parseResourceLocation, type RawAction } from '../engine/sim';
+import { getLang, t } from '../i18n';
 import { translate, uid, type ActionEntry, type DialogueEntry, type DialogueFile } from '../model/project';
 import { ACTIONS, actionDef, GROUP_LABELS, RAW_ACTIONS, type ActionGroup } from '../model/schema';
 import type { Problem, Severity } from '../model/validate';
@@ -61,7 +62,7 @@ const ICONS: Record<string, LucideIcon> = {
 
 const SEVERITY_ICON: Record<Severity, LucideIcon> = { error: XCircle, warning: AlertTriangle, info: Info };
 
-const seconds = (ticks: unknown) => (typeof ticks === 'number' ? `${ticks} ticks (${(ticks / 20).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} s)` : '0 tick');
+const seconds = (ticks: unknown) => (typeof ticks === 'number' ? `${ticks} ticks (${(ticks / 20).toLocaleString(getLang(), { maximumFractionDigits: 2 })} s)` : '0 tick');
 const clip = (s: string, n = 90) => (s.length > n ? `${s.slice(0, n)}…` : s);
 
 function useSummary() {
@@ -74,36 +75,36 @@ function useSummary() {
         const text = translate(project, locale, String(o.text ?? '')).replace(/\[\/?\w+(?:\s+\w+=\S+)*]/g, '').replace(/\n/g, ' ⏎ ');
         return {
           speaker: sp ? { name: translate(project, locale, sp.name), color: speakerCss(sp.color) } : undefined,
-          text: clip(text) || '(vide)',
+          text: clip(text) || t('(vide)'),
         };
       }
       case 'choice': {
         const list = (Array.isArray(o.choices) ? o.choices : []) as RawAction[];
         const names = list.length ? list.map((c) => String(c.name)) : [o.option1, o.option2].filter(Boolean).map(String);
-        return { text: clip(names.map((n) => translate(project, locale, n)).join(' · ')) || '(aucune option)' };
+        return { text: clip(names.map((n) => translate(project, locale, n)).join(' · ')) || t('(aucune option)') };
       }
       case 'next_dialogue':
         return { text: `→ ${o.dialogue ?? o.set ?? '?'}` };
       case 'text':
-        return { text: clip(translate(project, locale, String(o.text ?? ''))) || '(vide)' };
+        return { text: clip(translate(project, locale, String(o.text ?? ''))) || t('(vide)') };
       case 'image':
-        return { text: `#${o.id ?? 0} · ${o.image ?? '(aucune)'}` };
+        return { text: `#${o.id ?? 0} · ${o.image ?? t('(aucune)')}` };
       case 'image_move': {
-        const tracks = [['position', 'position'], ['rotation', 'rotation'], ['scale', 'échelle'], ['color', 'couleur']].filter(([k]) => o[k]).map(([, l]) => l);
-        return { text: `#${o.id ?? 0} · ${tracks.join(', ') || 'aucune piste'}` };
+        const tracks = [['position', t('position')], ['rotation', t('rotation')], ['scale', t('échelle')], ['color', t('couleur')]].filter(([k]) => o[k]).map(([, l]) => l);
+        return { text: `#${o.id ?? 0} · ${tracks.join(', ') || t('aucune piste')}` };
       }
       case 'fade':
         return { text: `${o.from ?? '?'} → ${o.to ?? '?'} · ${seconds(o.time)}` };
       case 'clear':
-        return { text: o.cleared_actions ? String(o.cleared_actions) : 'tout' };
+        return { text: o.cleared_actions ? String(o.cleared_actions) : t('tout') };
       case 'wait':
         return { text: seconds(o.time) };
       case 'timings':
-        return { text: `${o.speed ?? 1} tick(s) par lettre` };
+        return { text: t('{n} tick(s) par lettre', { n: String(o.speed ?? 1) }) };
       case 'press_enter':
-        return { text: 'Touche Entrée uniquement' };
+        return { text: t('Touche Entrée uniquement') };
       case 'sound':
-        return { text: String(o.sound ?? '(aucun)') };
+        return { text: String(o.sound ?? t('(aucun)')) };
       case 'command':
         return { text: `/${o.command ?? ''}` };
       case 'npc':
@@ -111,10 +112,10 @@ function useSummary() {
       case 'quest_state':
         return { text: `${o.quest ?? '?'}${o.task ? ` / ${o.task}` : ''} → ${o.state ?? '?'}` };
       case 'play_cutscene':
-        return { text: `${o.cutscene ?? '?'}${o.wait_for_end ? ' · attend la fin' : ''}` };
+        return { text: `${o.cutscene ?? '?'}${o.wait_for_end ? ` · ${t('attend la fin')}` : ''}` };
     }
     const rawDef = RAW_ACTIONS.find((r) => r.id === String(o.action).replace('blablalib:', ''));
-    return { text: rawDef ? rawDef.description : 'Action inconnue, ignorée par BlablaLib' };
+    return { text: rawDef ? t(rawDef.description) : t('Action inconnue, ignorée par BlablaLib') };
   };
 }
 
@@ -182,11 +183,11 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
     <div className="timeline">
       <div className="timeline-head">
         <h2 className="mono">{dialogue.key}</h2>
-        <span className="muted">{dialogue.actions.length} action{dialogue.actions.length > 1 ? 's' : ''}</span>
+        <span className="muted">{dialogue.actions.length > 1 ? t('{n} actions', { n: dialogue.actions.length }) : t('{n} action', { n: dialogue.actions.length })}</span>
         <span className="spacer" />
         <div className="segmented" role="tablist">
           <button role="tab" aria-selected={mode === 'form'} className={mode === 'form' ? 'on' : ''} onClick={() => setMode('form')}>
-            <ScrollText size={14} /> Formulaire
+            <ScrollText size={14} /> {t('Formulaire')}
           </button>
           <button role="tab" aria-selected={mode === 'json'} className={mode === 'json' ? 'on' : ''} onClick={() => setMode('json')}>
             <Braces size={14} /> JSON
@@ -243,7 +244,7 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
                   <span
                     className="grip"
                     draggable
-                    title="Glisser pour déplacer"
+                    title={t('Glisser pour déplacer')}
                     onClick={(e) => e.stopPropagation()}
                     onDragStart={(e) => {
                       setDragFrom(i);
@@ -264,7 +265,7 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
                   </span>
                   <span className="action-main">
                     <span className="action-label">
-                      {def?.label ?? RAW_ACTIONS.find((r) => r.id === short.replace('blablalib:', ''))?.label ?? String(o.action ?? 'Sans action')}
+                      {t(def?.label ?? RAW_ACTIONS.find((r) => r.id === short.replace('blablalib:', ''))?.label ?? '') || String(o.action ?? t('Sans action'))}
                       {s.speaker && (
                         <span className="speaker-name" style={{ color: s.speaker.color }}>
                           {s.speaker.name}
@@ -275,13 +276,13 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
                   </span>
                   {worst && <SeverityDot severity={worst} count={ps.length} />}
                   <span className="row-tools" onClick={(e) => e.stopPropagation()}>
-                    <button className="icon-btn" title="Jouer depuis cette action" onClick={() => onPlayFrom(i)}>
+                    <button className="icon-btn" title={t('Jouer depuis cette action')} onClick={() => onPlayFrom(i)}>
                       <Play size={14} />
                     </button>
-                    <button className="icon-btn" title="Dupliquer" onClick={() => duplicate(i)}>
+                    <button className="icon-btn" title={t('Dupliquer')} onClick={() => duplicate(i)}>
                       <Copy size={14} />
                     </button>
-                    <button className="icon-btn danger" title="Supprimer" onClick={() => remove(i)}>
+                    <button className="icon-btn danger" title={t('Supprimer')} onClick={() => remove(i)}>
                       <Trash2 size={14} />
                     </button>
                   </span>
@@ -290,9 +291,9 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
                   <div className="action-body">
                     {def && (
                       <div className="action-meta">
-                        <span>{def.description}</span>
-                        <span className={blocking ? 'tag on' : 'tag'}>{blocking ? 'Bloquante' : 'Non bloquante'}</span>
-                        <span className={def.skippable ? 'tag' : 'tag warn'}>{def.skippable ? 'Passable (Échap)' : 'Non passable'}</span>
+                        <span>{t(def.description)}</span>
+                        <span className={blocking ? 'tag on' : 'tag'}>{blocking ? t('Bloquante') : t('Non bloquante')}</span>
+                        <span className={def.skippable ? 'tag' : 'tag warn'}>{def.skippable ? t('Passable (Échap)') : t('Non passable')}</span>
                       </div>
                     )}
                     {ps.map((p, k) => (
@@ -316,7 +317,7 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
 
           {dialogue.actions.length === 0 && (
             <div className="empty">
-              <p>Ce dialogue est vide. Commencez par un message ou une image.</p>
+              <p>{t('Ce dialogue est vide. Commencez par un message ou une image.')}</p>
             </div>
           )}
 
@@ -325,8 +326,8 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
             onClick={() => setPaletteAt(paletteAt === null ? (selectedIndex >= 0 ? selectedIndex + 1 : dialogue.actions.length) : null)}
             aria-expanded={paletteAt !== null}
           >
-            <Plus size={15} /> Ajouter une action
-            {selectedIndex >= 0 && <span className="muted">après la n° {selectedIndex + 1}</span>}
+            <Plus size={15} /> {t('Ajouter une action')}
+            {selectedIndex >= 0 && <span className="muted">{t('après la n° {n}', { n: selectedIndex + 1 })}</span>}
           </button>
           {paletteAt !== null && <Palette onPick={(raw) => insert(paletteAt, raw)} />}
         </div>
@@ -341,16 +342,16 @@ function Palette({ onPick }: { onPick: (raw: RawAction) => void }) {
     <div className="palette">
       {groups.map((g) => (
         <div key={g} className={`palette-group group-${g}`}>
-          <h4>{GROUP_LABELS[g]}</h4>
+          <h4>{t(GROUP_LABELS[g])}</h4>
           <div className="palette-items">
             {ACTIONS.filter((a) => a.group === g).map((a) => {
               const Icon = ICONS[a.shortId] ?? Ban;
               return (
-                <button key={a.id} title={a.description} onClick={() => onPick(a.defaults)}>
+                <button key={a.id} title={t(a.description)} onClick={() => onPick(a.defaults)}>
                   <span className="action-icon">
                     <Icon size={14} />
                   </span>
-                  {a.label}
+                  {t(a.label)}
                 </button>
               );
             })}
@@ -358,11 +359,11 @@ function Palette({ onPick }: { onPick: (raw: RawAction) => void }) {
               RAW_ACTIONS.map((a) => {
                 const Icon = ICONS[a.id];
                 return (
-                  <button key={a.id} title={a.description} onClick={() => onPick({ action: a.id })}>
+                  <button key={a.id} title={t(a.description)} onClick={() => onPick({ action: a.id })}>
                     <span className="action-icon">
                       <Icon size={14} />
                     </span>
-                    {a.label}
+                    {t(a.label)}
                   </button>
                 );
               })}
@@ -376,7 +377,7 @@ function Palette({ onPick }: { onPick: (raw: RawAction) => void }) {
 function SeverityDot({ severity, count }: { severity: Severity; count: number }) {
   const Icon = SEVERITY_ICON[severity];
   return (
-    <span className={`sev ${severity}`} title={`${count} remarque${count > 1 ? 's' : ''}`}>
+    <span className={`sev ${severity}`} title={count > 1 ? t('{n} remarques', { n: count }) : t('{n} remarque', { n: count })}>
       <Icon size={14} />
     </span>
   );
@@ -427,13 +428,13 @@ function RawJson({ dialogue, mutateDialogue }: { dialogue: DialogueEntry; mutate
           setText(e.target.value);
           try {
             const parsed = JSON.parse(e.target.value);
-            if (!Array.isArray(parsed)) throw new Error('Un dialogue est un tableau d’actions.');
+            if (!Array.isArray(parsed)) throw new Error(t('Un dialogue est un tableau d’actions.'));
             setError('');
             mutateDialogue((d) => {
               d.actions = parsed.map((raw: RawAction, i: number) => ({ uid: d.actions[i]?.uid ?? uid(), raw }));
             }, `json:${dialogue.uid}`);
           } catch (err) {
-            setError(err instanceof Error ? err.message : 'JSON invalide');
+            setError(err instanceof Error ? err.message : t('JSON invalide'));
           }
         }}
       />
