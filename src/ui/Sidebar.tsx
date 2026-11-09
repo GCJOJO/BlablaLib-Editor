@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Copy, FileJson, FilePlus2, Languages, MessagesSquare, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
+import { Copy, FileJson, FilePlus2, Languages, MessagesSquare, Pencil, Plus, Puzzle, Search, Trash2, Users } from 'lucide-react';
 import { t } from '../i18n';
 import { dialogueId, type DialogueFile, type Project } from '../model/project';
 import type { Problem } from '../model/validate';
 
-export type View = 'dialogue' | 'speakers' | 'lang';
+export type View = 'dialogue' | 'speakers' | 'lang' | 'extensions';
 
 interface Props {
   project: Project;
@@ -49,6 +49,10 @@ export function Sidebar(p: Props) {
         </button>
         <button role="tab" aria-selected={p.view === 'lang'} className={p.view === 'lang' ? 'on' : ''} onClick={() => p.setView('lang')}>
           <Languages size={15} /> {t('Traductions')}
+        </button>
+        <button role="tab" aria-selected={p.view === 'extensions'} className={p.view === 'extensions' ? 'on' : ''} onClick={() => p.setView('extensions')}>
+          <Puzzle size={15} /> {t('Extensions')}
+          {p.project.extensions.length > 0 && <span className="muted side-count">{p.project.extensions.length}</span>}
         </button>
       </div>
 

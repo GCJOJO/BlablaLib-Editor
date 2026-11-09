@@ -48,8 +48,10 @@ import {
   type Textures,
 } from '../model/io';
 import { validateProject } from '../model/validate';
+import { customActionDefs, serializeExtension } from '../model/extensions';
 import { t, useLang } from '../i18n';
 import { EditorCtx, type EditorContext } from './context';
+import { ExtensionsView } from './ExtensionsView';
 import { OptionsMenu } from './OptionsMenu';
 import { PreviewPanel, type PlayStatus } from './PreviewPanel';
 import { Sidebar, type View } from './Sidebar';
@@ -66,6 +68,7 @@ const snapshotOf = (p: Project) => {
   const map = new Map<string, string>();
   for (const f of p.files) map.set(f.uid, serializeFile(f));
   for (const l of p.langs) map.set(l.uid, serializeLang(l));
+  for (const e of p.extensions) map.set(e.uid, serializeExtension(e));
   return map;
 };
 
@@ -128,6 +131,7 @@ export function App() {
       try {
         const autosave = await idbGet<{ project: Project; textures: Textures; saved: [string, string][]; handle?: FileSystemDirectoryHandle; locale: string }>('autosave');
         if (autosave?.project) {
+          autosave.project.extensions ??= [];
           applyLoaded({ project: autosave.project, textures: autosave.textures ?? new Map(), errors: [] }, autosave.handle ?? null);
           setSaved(new Map(autosave.saved));
           setLocale(autosave.locale);
@@ -247,15 +251,18 @@ export function App() {
 
   const textureIds = useMemo(() => [...textures.keys()].sort(), [textures]);
   const problems = useMemo(() => (project ? validateProject(project, new Set(textureIds), locale) : []), [project, textureIds, locale, lang]);
-  const world = useMemo(() => (project ? makeWorld(project, locale) : null), [project, locale]);
+  const world = useMemo(() => (project ? makeWorld(project, locale, lang) : null), [project, locale, lang]);
+  const customActions = useMemo(() => (project ? customActionDefs(project.extensions, lang) : []), [project, lang]);
   const dirty = useMemo(() => {
-    if (!project) return { files: [], langs: [] };
+    if (!project) return { files: [], langs: [], extensions: [] };
     return {
       files: project.files.filter((f) => saved.get(f.uid) !== serializeFile(f)),
       langs: project.langs.filter((l) => saved.get(l.uid) !== serializeLang(l)),
+      // Sans dossier, les extensions ne sont pas dans le zip : on les exporte une par une.
+      extensions: root ? project.extensions.filter((e) => saved.get(e.uid) !== serializeExtension(e)) : [],
     };
-  }, [project, saved]);
-  const dirtyCount = dirty.files.length + dirty.langs.length + newTextures.size;
+  }, [project, saved, root]);
+  const dirtyCount = dirty.files.length + dirty.langs.length + dirty.extensions.length + newTextures.size;
   const counts = useMemo(() => {
     const c = { error: 0, warning: 0, info: 0 };
     problems.forEach((p) => c[p.severity]++);
@@ -303,13 +310,14 @@ export function App() {
         dialogueIds: allDialogueIds(project),
         speakers: allSpeakers(project),
         textureIds,
+        customActions,
         textureBitmaps: bitmaps,
         defaultNamespace: current?.file.namespace ?? project.files[0]?.namespace ?? 'minecraft',
         openDialogueById,
         setTranslation,
         addTexture,
       },
-    [project, locale, textureIds, bitmaps, current?.file.namespace, openDialogueById, setTranslation, addTexture],
+    [project, locale, textureIds, customActions, bitmaps, current?.file.namespace, openDialogueById, setTranslation, addTexture],
   );
 
   const mutateDialogue = useCallback(
@@ -510,7 +518,8 @@ export function App() {
       const next = structuredClone(project);
       const files = next.files.filter((f) => dirty.files.some((d) => d.uid === f.uid));
       const langs = next.langs.filter((l) => dirty.langs.some((d) => d.uid === l.uid));
-      const written = await saveToFolder(root, next, files, langs, newTextures);
+      const extensions = next.extensions.filter((e) => dirty.extensions.some((d) => d.uid === e.uid));
+      const written = await saveToFolder(root, next, files, langs, newTextures, extensions);
       setProject(next);
       setSaved(snapshotOf(next));
       setNewTextures(new Map());
@@ -671,6 +680,7 @@ export function App() {
               ))}
             {view === 'speakers' && <SpeakersView project={project} locale={locale} mutate={mutate} />}
             {view === 'lang' && <LangView project={project} mutate={mutate} defaultNamespace={ctx.defaultNamespace} />}
+            {view === 'extensions' && <ExtensionsView project={project} mutate={mutate} notify={notify} />}
           </main>
 
           <div className="preview-col">

@@ -2,6 +2,7 @@
 
 import { strToU8, zipSync } from 'fflate';
 import { t } from '../i18n';
+import { EXTENSION_FOLDER, extensionFileName, parseExtension, serializeExtension, type Extension } from './extensions';
 import {
   datapackFilePath,
   datapackLangPath,
@@ -28,11 +29,13 @@ const DIALOGUE_RE = /(?:^|\/)data\/([^/]+)\/dialogues\/(.+\.json)$/;
 const LANG_RE = /(?:^|\/)assets\/([^/]+)\/lang\/([a-z0-9_]+)\.json$/;
 const TEXTURE_RE = /(?:^|\/)assets\/([^/]+)\/(textures\/.+\.png)$/;
 
-export const isRelevantPath = (p: string) => DIALOGUE_RE.test(p) || LANG_RE.test(p) || TEXTURE_RE.test(p);
+const EXTENSION_RE = new RegExp(`(?:^|/)${EXTENSION_FOLDER}/[^/]+\\.json$`);
+
+export const isRelevantPath = (p: string) => DIALOGUE_RE.test(p) || LANG_RE.test(p) || TEXTURE_RE.test(p) || EXTENSION_RE.test(p);
 
 /** Construit le projet à partir d'une liste de fichiers (chemin relatif + lecture paresseuse). */
 export async function buildProject(name: string, entries: { path: string; read: () => Promise<Blob> }[]): Promise<LoadedProject> {
-  const project: Project = { name, files: [], langs: [] };
+  const project: Project = { name, files: [], langs: [], extensions: [] };
   const textures: Textures = new Map();
   const errors: string[] = [];
   for (const entry of entries) {
@@ -46,6 +49,12 @@ export async function buildProject(name: string, entries: { path: string; read: 
       if (m) {
         const entries_ = parseLenientJson(await (await entry.read()).text()) as Record<string, string>;
         project.langs.push({ uid: uid(), namespace: m[1], locale: m[2], originPath: entry.path, entries: entries_ });
+        continue;
+      }
+      if (EXTENSION_RE.test(entry.path)) {
+        const { extension, errors: problems } = parseExtension(parseLenientJson(await (await entry.read()).text()), uid(), entry.path);
+        if (extension) project.extensions.push(extension);
+        else errors.push(t('{file} : {error}', { file: entry.path, error: problems.slice(0, 3).join(' ') }));
         continue;
       }
       m = TEXTURE_RE.exec(entry.path);
@@ -122,6 +131,7 @@ export async function saveToFolder(
   files: DialogueFile[],
   langs: LangFile[],
   newTextures: Textures,
+  extensions: Extension[] = [],
 ): Promise<string[]> {
   const base = resourceRoot(project);
   const written: string[] = [];
@@ -141,6 +151,13 @@ export async function saveToFolder(
     const [ns, tex] = rl.split(/:(.*)/s);
     const path = `${base}assets/${ns}/${tex}`;
     await writeFile(root, path, blob);
+    written.push(path);
+  }
+  // Les extensions ne servent qu'à l'éditeur : à la racine du dossier ouvert, hors des ressources du mod.
+  for (const e of extensions) {
+    const path = e.originPath ?? `${EXTENSION_FOLDER}/${extensionFileName(e)}`;
+    await writeFile(root, path, serializeExtension(e));
+    e.originPath = path;
     written.push(path);
   }
   return written;

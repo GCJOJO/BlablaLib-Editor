@@ -27,6 +27,19 @@ export interface SimWorld {
   speakers: SimSpeaker[];
   /** Component.translatable(key).getString() : la clé elle-même si aucune traduction. */
   translate(key: string): string;
+  /** Actions déclarées par des extensions (registerCustomAction), par identifiant normalisé. */
+  customActions?: Record<string, SimCustomAction>;
+}
+
+/**
+ * Ce qu'une extension déclare d'une action custom. Son code Java n'est pas connu : la preview
+ * reproduit seulement son rythme et l'inscrit au journal.
+ */
+export interface SimCustomAction {
+  label: string;
+  blocking: boolean;
+  skippable: boolean;
+  preview: { mode: 'instant' | 'ticks' | 'input'; ticks?: number; ticksField?: string; log?: string };
 }
 
 export interface GlyphDraw {
@@ -767,6 +780,49 @@ export class PlayCutsceneAction extends Action {
   }
 }
 
+/** Action d'un autre mod, décrite par une extension. */
+export class CustomAction extends Action {
+  readonly cls: string;
+  readonly blocking: boolean;
+  readonly skippable: boolean;
+  readonly def: SimCustomAction;
+  readonly raw: RawAction;
+  ticks = 0;
+  current = 0;
+
+  constructor(id: string, o: RawAction, def: SimCustomAction) {
+    super();
+    // Une classe par action enregistrée : un clear sur cet identifiant ne vise qu'elle.
+    this.cls = id;
+    this.def = def;
+    this.raw = o;
+    this.blocking = def.blocking;
+    this.skippable = def.skippable;
+    const field = def.preview.ticksField;
+    this.ticks = field && typeof o[field] === 'number' ? (o[field] as number) : (def.preview.ticks ?? 0);
+  }
+  get mode() {
+    return this.def.preview.mode;
+  }
+  setup(screen: DialogueScreen) {
+    super.setup(screen);
+    const log = this.def.preview.log?.replace(/\{(\w+)\}/g, (all, k: string) => (has(this.raw, k) ? (typeof this.raw[k] === 'string' ? (this.raw[k] as string) : JSON.stringify(this.raw[k])) : all));
+    screen.run.emit('custom', log ? tr('{label} : {details}', { label: this.def.label, details: log }) : this.def.label, this.index);
+    if (this.blocking && (this.mode === 'instant' || (this.mode === 'ticks' && this.ticks <= 0))) screen.queueAdvanceDialogue();
+  }
+  step() {
+    if (!this.blocking || this.mode !== 'ticks') return;
+    this.current++;
+    if (this.current >= this.ticks) this.screen.queueAdvanceDialogue();
+  }
+  mouseClicked(_x: number, _y: number, button: number) {
+    if (this.blocking && this.mode === 'input' && button === 0) this.screen.queueAdvanceDialogue();
+  }
+  keyPressed(key: number) {
+    if (this.blocking && this.mode === 'input' && (key === 257 || key === 32)) this.screen.queueAdvanceDialogue();
+  }
+}
+
 export class UnknownAction extends Action {
   readonly cls = 'unknown';
   readonly blocking = false;
@@ -812,7 +868,8 @@ export function loadActions(raw: RawAction[], world: SimWorld): Action[] {
     const name = String(o.action);
     const id = parseResourceLocation(name);
     const def = id ? ACTION_CLASSES[id] : undefined;
-    let action: Action = new UnknownAction(name);
+    const custom = !def && id ? world.customActions?.[id] : undefined;
+    let action: Action = custom ? new CustomAction(id!, o, custom) : new UnknownAction(name);
     if (def) {
       try {
         action = def.make(o, world);
@@ -971,8 +1028,8 @@ export class DialogueScreen {
     this.currentActions = [];
   }
   clearActionsOf(rl: string) {
-    const def = ACTION_CLASSES[rl];
-    if (def) this.currentActions = this.currentActions.filter((a) => a.cls !== def.cls);
+    const cls = ACTION_CLASSES[rl]?.cls ?? (this.world.customActions?.[rl] ? rl : null);
+    if (cls) this.currentActions = this.currentActions.filter((a) => a.cls !== cls);
   }
   skipDialogue() {
     while (this.actionIndex < this.dialogueActions.length && this.dialogueActions[this.actionIndex].skippable) {
@@ -1089,7 +1146,7 @@ export class Server {
 
 // --- Une lecture complète ------------------------------------------------------------------------
 
-export type RunEventKind = 'sound' | 'command' | 'npc' | 'quest' | 'cutscene' | 'choice' | 'warn' | 'end' | 'open';
+export type RunEventKind = 'sound' | 'command' | 'npc' | 'quest' | 'cutscene' | 'choice' | 'custom' | 'warn' | 'end' | 'open';
 
 export interface RunEvent {
   id: number;
@@ -1252,6 +1309,14 @@ export class PreviewRun {
   get waitingForEnter(): boolean {
     const s = this.screen;
     return !!s && !s.closed && s.currentFadingTime < 0 && s.dialogueActions[s.actionIndex] instanceof PressEnterAction;
+  }
+
+  /** L'écran attend une action d'extension qui se termine par un clic ou une touche. */
+  get waitingForInput(): boolean {
+    const s = this.screen;
+    if (!s || s.closed || s.currentFadingTime >= 0) return false;
+    const current = s.dialogueActions[s.actionIndex];
+    return current instanceof CustomAction && current.blocking && current.mode === 'input';
   }
 
   /** L'écran attend-il quelque chose qui n'arrivera jamais ? */

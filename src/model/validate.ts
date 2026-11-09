@@ -8,6 +8,7 @@ import { textWidth } from '../engine/font';
 import { ACTION_CLASSES, MESSAGE_TEXT_WIDTH, parseResourceLocation, type RawAction } from '../engine/sim';
 import { t } from '../i18n';
 import { DOC_NAMES } from './schema';
+import { customActionMap, type ExtensionAction } from './extensions';
 import {
   allDialogueIds,
   allSpeakers,
@@ -57,9 +58,10 @@ const BLOCKING_ACTIONS = [
   'blablalib:press_enter',
 ];
 
-function isBlocking(raw: RawAction): boolean {
+function isBlocking(raw: RawAction, custom: Map<string, ExtensionAction>): boolean {
   const id = parseResourceLocation(String(raw.action));
   if (id === 'blablalib:play_cutscene') return raw.wait_for_end === true;
+  if (id && !ACTION_CLASSES[id]) return custom.get(id)?.blocking ?? false;
   return !!id && BLOCKING_ACTIONS.includes(id);
 }
 
@@ -78,6 +80,7 @@ interface Ctx {
   locale: string;
   speakerIds: Set<string>;
   textures: Set<string>;
+  custom: Map<string, ExtensionAction>;
   add: (severity: Severity, entry: ActionEntry | null, message: string, fix?: Problem['fix']) => void;
 }
 
@@ -169,6 +172,54 @@ function checkImageMove(ctx: Ctx, e: ActionEntry, index: number) {
   }
 }
 
+/** Valeurs d'une action d'extension, d'après les types déclarés par son schéma. */
+function checkCustom(ctx: Ctx, e: ActionEntry, def: ExtensionAction) {
+  const o = e.raw;
+  for (const f of def.fields) {
+    if (!(f.key in o)) {
+      if (f.required) ctx.add('warning', e, t('Champ « {key} » absent, alors que l’extension le déclare obligatoire.', { key: f.key }));
+      continue;
+    }
+    const v = o[f.key];
+    const wrong = (expected: string) => ctx.add('warning', e, t('Champ « {key} » : {expected} attendu.', { key: f.key, expected }));
+    switch (f.type) {
+      case 'number':
+        if (typeof v !== 'number') wrong(t('un nombre'));
+        else if ((f.min !== undefined && v < f.min) || (f.max !== undefined && v > f.max)) {
+          ctx.add('warning', e, t('Champ « {key} » : {value} hors des limites prévues ({min} à {max}).', { key: f.key, value: v, min: f.min ?? '…', max: f.max ?? '…' }));
+        }
+        break;
+      case 'bool':
+        if (typeof v !== 'boolean') wrong(t('true ou false'));
+        break;
+      case 'select':
+        if (!f.options?.includes(String(v))) ctx.add('warning', e, t('Champ « {key} » : « {value} » ne fait pas partie des options ({list}).', { key: f.key, value: String(v), list: (f.options ?? []).join(', ') }));
+        break;
+      case 'color': {
+        const message = colorProblem(v, f.key);
+        if (message) ctx.add('warning', e, message);
+        break;
+      }
+      case 'dialogue':
+        if (typeof v !== 'string') wrong(t('un identifiant de dialogue'));
+        else if (!findDialogue(ctx.project, v)) ctx.add('warning', e, t("Champ « {key} » : le dialogue « {id} » n'existe pas dans ce projet.", { key: f.key, id: v }));
+        break;
+      case 'speaker': {
+        const id = typeof v === 'string' ? parseResourceLocation(v) : null;
+        if (!id || !ctx.speakerIds.has(id)) ctx.add('warning', e, t('Champ « {key} » : personnage « {id} » introuvable.', { key: f.key, id: String(v) }));
+        break;
+      }
+      case 'texture':
+        if (typeof v !== 'string' || !parseResourceLocation(v)) ctx.add('warning', e, t('Champ « {key} » : identifiant de texture invalide.', { key: f.key }));
+        break;
+      case 'text':
+      case 'multiline':
+        if (typeof v !== 'string') wrong(t('un texte'));
+        break;
+    }
+  }
+}
+
 function checkAction(ctx: Ctx, e: ActionEntry, index: number) {
   const o = e.raw;
   const last = index === ctx.dialogue.actions.length - 1;
@@ -196,15 +247,21 @@ function checkAction(ctx: Ctx, e: ActionEntry, index: number) {
     return;
   }
   if (['hide_ui', 'show_ui', 'blablalib:hide_ui', 'blablalib:show_ui'].includes(name)) return;
-  if (!id || !ACTION_CLASSES[id]) {
+  const custom = id && !ACTION_CLASSES[id] ? ctx.custom.get(id) : undefined;
+  if (!id || (!ACTION_CLASSES[id] && !custom)) {
     ctx.add('info', e, t("Action « {name} » inconnue de BlablaLib : ignorée, sauf si un autre mod l'enregistre (registerCustomAction). La preview la passe.", { name }));
     return;
   }
 
-  const nextBlocking = () => ctx.dialogue.actions.slice(index + 1).find((a) => isBlocking(a.raw));
+  const nextBlocking = () => ctx.dialogue.actions.slice(index + 1).find((a) => isBlocking(a.raw, ctx.custom));
 
-  if (last && !isBlocking(o)) {
+  if (last && !isBlocking(o, ctx.custom)) {
     ctx.add('info', e, t('Dernière action non bloquante : le dialogue se ferme au tick suivant. Terminez par « Attendre » ou « Attendre Entrée » pour la laisser visible.'));
+  }
+
+  if (custom) {
+    checkCustom(ctx, e, custom);
+    return;
   }
 
   switch (id) {
@@ -297,7 +354,7 @@ function checkAction(ctx: Ctx, e: ActionEntry, index: number) {
       }
       if (isSet(o.cleared_actions)) {
         const cls = parseResourceLocation(String(o.cleared_actions));
-        if (!cls || !ACTION_CLASSES[cls]) ctx.add('warning', e, t('Type « {type} » inconnu : rien ne sera effacé.', { type: String(o.cleared_actions) }));
+        if (!cls || (!ACTION_CLASSES[cls] && !ctx.custom.has(cls))) ctx.add('warning', e, t('Type « {type} » inconnu : rien ne sera effacé.', { type: String(o.cleared_actions) }));
       }
       break;
     }
@@ -340,6 +397,7 @@ export function validateProject(project: Project, textures: Set<string>, locale:
   const speakerIds = new Set(allSpeakers(project).map((s) => parseResourceLocation(String(s.id)) ?? ''));
   const ids = allDialogueIds(project);
   const dupes = new Set(ids.filter((id, i) => ids.indexOf(id) !== i));
+  const custom = customActionMap(project.extensions);
 
   for (const file of sortedFiles(project)) {
     const seenSpeakers = new Set<string>();
@@ -365,7 +423,7 @@ export function validateProject(project: Project, textures: Set<string>, locale:
       if (dupes.has(id)) add('warning', null, t("« {id} » existe dans plusieurs fichiers : le dernier fichier (ordre alphabétique) l'emporte.", { id }));
       if (dialogue.actions.length === 0) add('info', null, t('Dialogue vide : l’écran se ferme aussitôt.'));
 
-      const ctx: Ctx = { project, file, dialogue, locale, speakerIds, textures, add };
+      const ctx: Ctx = { project, file, dialogue, locale, speakerIds, textures, custom, add };
       dialogue.actions.forEach((entry, i) => checkAction(ctx, entry, i));
     }
   }

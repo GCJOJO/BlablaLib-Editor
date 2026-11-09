@@ -517,7 +517,7 @@ describe('validation', () => {
       'x',
       'a.json',
     );
-    const problems = validateProject({ name: '', files: [file], langs: [] }, new Set(), 'en_us');
+    const problems = validateProject({ name: '', files: [file], langs: [], extensions: [] }, new Set(), 'en_us');
     const texts = problems.map((p) => p.message).join('\n');
     expect(texts).toContain('blablalib:next');
     expect(texts).toContain('blablalib:move_image');
@@ -548,7 +548,7 @@ describe('validation', () => {
       'x',
       'a.json',
     );
-    expect(validateProject({ name: '', files: [file], langs: [] }, new Set(), 'en_us')).toEqual([]);
+    expect(validateProject({ name: '', files: [file], langs: [], extensions: [] }, new Set(), 'en_us')).toEqual([]);
   });
   it('fichier sans speakers : la clé est ajoutée à l’écriture', async () => {
     const { parseDialogueFile, serializeFile } = await import('../model/project');

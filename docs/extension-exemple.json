@@ -1,0 +1,33 @@
+{
+  "format": 1,
+  "id": "my_mod",
+  "name": "My mod",
+  "version": "1.0.0",
+  "actions": [
+    {
+      "id": "my_mod:camera_shake",
+      "label": "Camera shake",
+      "description": "Shakes the player's camera.",
+      "icon": "zap",
+      "blocking": true,
+      "skippable": true,
+      "preview": { "mode": "ticks", "ticksField": "time", "log": "intensity {intensity}" },
+      "fields": [
+        { "key": "time", "label": "Duration", "type": "number", "required": true, "default": 20, "min": 0, "step": 1, "hint": "In ticks." },
+        { "key": "intensity", "label": "Intensity", "type": "number", "default": 1, "min": 0, "max": 5, "step": 0.1, "slider": true }
+      ]
+    },
+    {
+      "id": "my_mod:give_item",
+      "label": { "en": "Give an item", "fr": "Donner un objet" },
+      "icon": "box",
+      "blocking": false,
+      "skippable": true,
+      "preview": { "mode": "instant", "log": "{count} × {item}" },
+      "fields": [
+        { "key": "item", "label": "Item", "type": "text", "required": true, "placeholder": "minecraft:diamond" },
+        { "key": "count", "label": "Count", "type": "number", "default": 1, "min": 1, "step": 1 }
+      ]
+    }
+  ]
+}

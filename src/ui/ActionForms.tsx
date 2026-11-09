@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp, Plus, Trash2, X } from 'lucide-react';
 import type { RawAction } from '../engine/sim';
 import { N_, t } from '../i18n';
 import { actionDef, RAW_ACTIONS } from '../model/schema';
+import { useEditor } from './context';
 import { ColorField, DialogueField, EasingSelect, Field, JsonField, NumberInput, SchemaField, TranslatableText } from './Fields';
 
 type Patch = (fn: (raw: RawAction) => void, coalesce?: string) => void;
@@ -225,7 +226,8 @@ const CUSTOM_KEYS: Record<string, string[]> = {
 };
 
 export function ActionForm({ raw, patch }: { raw: RawAction; patch: Patch }) {
-  const def = actionDef(raw);
+  const { customActions } = useEditor();
+  const def = actionDef(raw, customActions);
   if (!def) {
     const rawDef = RAW_ACTIONS.find((r) => r.id === String(raw.action).replace('blablalib:', ''));
     if (rawDef) return <p className="field-hint">{t(rawDef.description)} {t('Aucun réglage.')}</p>;
@@ -264,7 +266,7 @@ export function ActionForm({ raw, patch }: { raw: RawAction; patch: Patch }) {
               def={f}
               value={raw[f.key]}
               onChange={(v) => patch((r) => setKey(r, f.key, v), f.key)}
-              setMany={(values) => patch((r) => Object.assign(r, values))}
+              setMany={def.id === 'blablalib:image' ? (values) => patch((r) => Object.assign(r, values)) : undefined}
             />
           ))}
         </div>

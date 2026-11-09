@@ -2,6 +2,8 @@
 
 Permettre aux utilisateurs de décrire le schéma de leurs actions custom, avec un éditeur dédié et un chargement / une sauvegarde en JSON.
 
+> **Statut :** implémenté, avec les choix recommandés ci-dessous (extensions par projet, `registerOverload` laissé pour plus tard, preview limitée au rythme et au journal). Exemple : `docs/extension-exemple.json`.
+
 ## Principe
 
 Une extension est un fichier JSON qui **décrit** des actions custom, sans contenir de code. On peut donc la partager sans risque, et l'éditeur en génère les mêmes formulaires que pour les actions de base.
@@ -26,22 +28,22 @@ Une extension est un fichier JSON qui **décrit** des actions custom, sans conte
   "actions": [
     {
       "id": "mon_mod:camera_shake",
-      "label": { "fr": "Secousse caméra", "en": "Camera shake" },
-      "description": { "fr": "Fait trembler la caméra.", "en": "Shakes the camera." },
+      "label": "Camera shake",
+      "description": "Shakes the camera.",
       "icon": "wand",
       "blocking": true,
       "skippable": true,
       "preview": { "mode": "ticks", "ticksField": "time", "log": "Secousse {intensity}" },
       "fields": [
-        { "key": "time", "label": "Durée", "type": "number", "required": true, "default": 20, "min": 0, "step": 1 },
-        { "key": "intensity", "label": "Intensité", "type": "number", "default": 1, "step": 0.1, "slider": true, "min": 0, "max": 5 }
+        { "key": "time", "label": "Duration", "type": "number", "required": true, "default": 20, "min": 0, "step": 1 },
+        { "key": "intensity", "label": "Intensity", "type": "number", "default": 1, "step": 0.1, "slider": true, "min": 0, "max": 5 }
       ]
     }
   ]
 }
 ```
 
-- **Textes :** `label`, `description` et `hint` acceptent une simple chaîne ou une traduction par langue.
+- **Textes :** `label`, `description` et `hint` sont des textes simples, affichés quelle que soit la langue du site. Les traductions sont facultatives : `{ "en": "…", "fr": "…" }`, avec l'anglais en repli.
 - **Types de champs :** ceux qui existent déjà (`text`, `multiline`, `number`, `bool`, `select`, `color`, `dialogue`, `speaker`, `texture`, `json`). `json` sert de solution de repli pour les structures imbriquées.
 - **Clés de champ :** uniques dans une action. `action` est réservée.
 - **Modes de preview :**
