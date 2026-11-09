@@ -1,0 +1,33 @@
+{
+  "format": 1,
+  "id": "mon_mod",
+  "name": "Mon mod",
+  "version": "1.0.0",
+  "actions": [
+    {
+      "id": "mon_mod:camera_shake",
+      "label": { "fr": "Secousse caméra", "en": "Camera shake" },
+      "description": { "fr": "Fait trembler la caméra du joueur.", "en": "Shakes the player's camera." },
+      "icon": "zap",
+      "blocking": true,
+      "skippable": true,
+      "preview": { "mode": "ticks", "ticksField": "time", "log": "intensité {intensity}" },
+      "fields": [
+        { "key": "time", "label": { "fr": "Durée", "en": "Duration" }, "type": "number", "required": true, "default": 20, "min": 0, "step": 1, "hint": { "fr": "En ticks.", "en": "In ticks." } },
+        { "key": "intensity", "label": { "fr": "Intensité", "en": "Intensity" }, "type": "number", "default": 1, "min": 0, "max": 5, "step": 0.1, "slider": true }
+      ]
+    },
+    {
+      "id": "mon_mod:give_item",
+      "label": { "fr": "Donner un objet", "en": "Give an item" },
+      "icon": "box",
+      "blocking": false,
+      "skippable": true,
+      "preview": { "mode": "instant", "log": "{count} × {item}" },
+      "fields": [
+        { "key": "item", "label": { "fr": "Objet", "en": "Item" }, "type": "text", "required": true, "placeholder": "minecraft:diamond" },
+        { "key": "count", "label": { "fr": "Quantité", "en": "Count" }, "type": "number", "default": 1, "min": 1, "step": 1 }
+      ]
+    }
+  ]
+}

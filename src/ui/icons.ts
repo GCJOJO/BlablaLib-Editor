@@ -1,0 +1,86 @@
+import {
+  ArrowUpDown,
+  Ban,
+  Bell,
+  Box,
+  Camera,
+  Clapperboard,
+  Clock,
+  CornerDownLeft,
+  Droplets,
+  Eraser,
+  Eye,
+  EyeOff,
+  Flag,
+  GitBranch,
+  Heart,
+  Image as ImageIcon,
+  ListChecks,
+  Map as MapIcon,
+  MessageSquare,
+  Move,
+  Music,
+  Puzzle,
+  Shield,
+  Sparkles,
+  Star,
+  Sword,
+  Terminal,
+  Type,
+  User,
+  UserCog,
+  Volume2,
+  Wand2,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
+import type { ActionDef } from '../model/schema';
+
+/** Icônes des actions de BlablaLib, par identifiant court. */
+export const ACTION_ICONS: Record<string, LucideIcon> = {
+  message: MessageSquare,
+  choice: GitBranch,
+  next_dialogue: ArrowUpDown,
+  text: Type,
+  image: ImageIcon,
+  image_move: Move,
+  fade: Droplets,
+  clear: Eraser,
+  wait: Clock,
+  timings: Wand2,
+  sound: Volume2,
+  command: Terminal,
+  npc: UserCog,
+  quest_state: ListChecks,
+  play_cutscene: Clapperboard,
+  press_enter: CornerDownLeft,
+  hide_ui: EyeOff,
+  show_ui: Eye,
+};
+
+/** Icônes au choix pour les actions d'extension (voir EXTENSION_ICONS). */
+export const EXTENSION_ICON_MAP: Record<string, LucideIcon> = {
+  puzzle: Puzzle,
+  wand: Wand2,
+  sparkles: Sparkles,
+  camera: Camera,
+  music: Music,
+  flag: Flag,
+  star: Star,
+  zap: Zap,
+  heart: Heart,
+  box: Box,
+  map: MapIcon,
+  sword: Sword,
+  shield: Shield,
+  user: User,
+  eye: Eye,
+  bell: Bell,
+  clock: Clock,
+  message: MessageSquare,
+};
+
+export function iconFor(def: ActionDef | undefined, short: string): LucideIcon {
+  if (def?.group === 'extension') return EXTENSION_ICON_MAP[def.icon ?? ''] ?? Puzzle;
+  return ACTION_ICONS[short.replace('blablalib:', '')] ?? Ban;
+}

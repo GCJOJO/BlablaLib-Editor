@@ -1,7 +1,8 @@
 // Description de chaque action, d'après les constructeurs Java (pas la doc, qui a plusieurs noms
 // de champs périmés). Sert à générer les formulaires et les résumés de la liste.
 
-import type { RawAction } from '../engine/sim';
+import { parseResourceLocation, type RawAction } from '../engine/sim';
+import { t } from '../i18n';
 
 export type FieldType =
   | 'text'
@@ -31,6 +32,12 @@ export interface FieldDef {
   /** Le texte peut être une clé de traduction. */
   translatable?: boolean;
   half?: boolean;
+  /** Champ obligatoire (actions d'extension). */
+  required?: boolean;
+  /** Textes déjà dans la langue du site (actions d'extension) : ne pas les passer à t(). */
+  literal?: boolean;
+  /** Compteur de lignes de la boîte de message sous un texte multiligne. Actif par défaut. */
+  measure?: boolean;
 }
 
 export type ActionGroup = 'dialogue' | 'visuel' | 'rythme' | 'jeu';
@@ -39,7 +46,7 @@ export interface ActionDef {
   id: string;
   shortId: string;
   label: string;
-  group: ActionGroup;
+  group: ActionGroup | 'extension';
   blocking: boolean;
   skippable: boolean;
   description: string;
@@ -47,6 +54,12 @@ export interface ActionDef {
   defaults: RawAction;
   /** Formulaire spécifique (choix, animations, PNJ). */
   custom?: 'choice' | 'image_move' | 'npc';
+  /** Textes déjà dans la langue du site (actions d'extension) : ne pas les passer à t(). */
+  literal?: boolean;
+  /** Nom de l'extension qui déclare l'action. */
+  extension?: string;
+  /** Nom d'icône d'extension (voir EXTENSION_ICONS). */
+  icon?: string;
 }
 
 const percent = (key: 'x' | 'y', label: string): FieldDef => ({
@@ -325,10 +338,20 @@ export const GROUP_LABELS: Record<ActionGroup, string> = {
   jeu: 'Jeu',
 };
 
-export function actionDef(raw: RawAction): ActionDef | undefined {
+/** Les actions de BlablaLib passent avant celles des extensions, comme dans le registre du mod. */
+export function actionDef(raw: RawAction, custom: ActionDef[] = []): ActionDef | undefined {
   const name = String(raw.action ?? '');
   const normalized = ALIASES[name] ?? name;
-  return ACTIONS.find((a) => a.id === normalized);
+  const builtin = ACTIONS.find((a) => a.id === normalized);
+  if (builtin || !custom.length) return builtin;
+  const id = parseResourceLocation(name);
+  return id ? custom.find((a) => a.id === id) : undefined;
 }
 
 export const CLEARABLE = ACTIONS.filter((a) => !a.blocking || a.id === 'blablalib:message').map((a) => a.id);
+
+/** Types qu'un clear peut viser : ceux de BlablaLib et les actions d'extension non bloquantes. */
+export const clearableIds = (custom: ActionDef[]) => [...CLEARABLE, ...custom.filter((a) => !a.blocking).map((a) => a.id)];
+
+/** Texte d'interface d'une description d'action : traduit, sauf s'il vient d'une extension. */
+export const label = (text: string, literal?: boolean) => (literal ? text : t(text));

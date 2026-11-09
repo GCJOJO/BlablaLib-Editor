@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { SimSpeaker } from '../engine/sim';
 import type { Project } from '../model/project';
+import type { ActionDef } from '../model/schema';
 
 export interface EditorContext {
   project: Project;
@@ -8,6 +9,8 @@ export interface EditorContext {
   dialogueIds: string[];
   speakers: SimSpeaker[];
   textureIds: string[];
+  /** Actions déclarées par les extensions du projet, dans la langue du site. */
+  customActions: ActionDef[];
   textureBitmaps: Map<string, ImageBitmap>;
   defaultNamespace: string;
   openDialogueById: (id: string) => void;

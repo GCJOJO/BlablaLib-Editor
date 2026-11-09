@@ -1,64 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
-  ArrowUpDown,
-  CornerDownLeft,
-  Ban,
   Braces,
-  Clapperboard,
-  Clock,
   Copy,
-  Droplets,
-  Eraser,
-  EyeOff,
-  Eye,
-  GitBranch,
   GripVertical,
-  Image as ImageIcon,
   Info,
-  ListChecks,
-  MessageSquare,
-  Move,
   Play,
   Plus,
   ScrollText,
-  Terminal,
   Trash2,
-  Type,
-  UserCog,
-  Volume2,
-  Wand2,
   XCircle,
   type LucideIcon,
 } from 'lucide-react';
 import { parseResourceLocation, type RawAction } from '../engine/sim';
 import { getLang, t } from '../i18n';
 import { translate, uid, type ActionEntry, type DialogueEntry, type DialogueFile } from '../model/project';
-import { ACTIONS, actionDef, GROUP_LABELS, RAW_ACTIONS, type ActionGroup } from '../model/schema';
+import { ACTIONS, actionDef, GROUP_LABELS, label as uiText, RAW_ACTIONS, type ActionDef, type ActionGroup } from '../model/schema';
 import type { Problem, Severity } from '../model/validate';
 import { ActionForm } from './ActionForms';
 import { useEditor } from './context';
-
-const ICONS: Record<string, LucideIcon> = {
-  message: MessageSquare,
-  choice: GitBranch,
-  next_dialogue: ArrowUpDown,
-  text: Type,
-  image: ImageIcon,
-  image_move: Move,
-  fade: Droplets,
-  clear: Eraser,
-  wait: Clock,
-  timings: Wand2,
-  sound: Volume2,
-  command: Terminal,
-  npc: UserCog,
-  quest_state: ListChecks,
-  play_cutscene: Clapperboard,
-  press_enter: CornerDownLeft,
-  hide_ui: EyeOff,
-  show_ui: Eye,
-};
+import { iconFor } from './icons';
 
 const SEVERITY_ICON: Record<Severity, LucideIcon> = { error: XCircle, warning: AlertTriangle, info: Info };
 
@@ -66,9 +27,10 @@ const seconds = (ticks: unknown) => (typeof ticks === 'number' ? `${ticks} ticks
 const clip = (s: string, n = 90) => (s.length > n ? `${s.slice(0, n)}…` : s);
 
 function useSummary() {
-  const { project, locale, speakers } = useEditor();
+  const { project, locale, speakers, customActions } = useEditor();
   return (o: RawAction): { speaker?: { name: string; color: string }; text: string } => {
-    const def = actionDef(o);
+    const def = actionDef(o, customActions);
+    if (def?.group === 'extension') return { text: clip(customSummary(def, o, (k) => translate(project, locale, k))) || def.description || t('(aucun réglage)') };
     switch (def?.shortId) {
       case 'message': {
         const sp = speakers.find((s) => parseResourceLocation(String(s.id)) === parseResourceLocation(String(o.speaker ?? '')));
@@ -119,6 +81,18 @@ function useSummary() {
   };
 }
 
+/** Valeurs renseignées d'une action d'extension, dans l'ordre de son schéma. */
+function customSummary(def: ActionDef, o: RawAction, tr: (key: string) => string): string {
+  return def.fields
+    .filter((f) => o[f.key] !== undefined)
+    .map((f) => {
+      const v = o[f.key];
+      const shown = typeof v === 'string' ? (f.translatable ? tr(v) : v) : JSON.stringify(v);
+      return t('{label} : {details}', { label: f.label, details: shown });
+    })
+    .join(' · ');
+}
+
 function speakerCss(color: string): string {
   const m = /^#([0-9a-fA-F]{2})?([0-9a-fA-F]{6})$/.exec(color ?? '');
   return m ? `#${m[2]}` : 'inherit';
@@ -142,6 +116,7 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
   const [mode, setMode] = useState<'form' | 'json'>('form');
   const listRef = useRef<HTMLDivElement>(null);
   const summary = useSummary();
+  const { customActions } = useEditor();
 
   const problemsByAction = useMemo(() => {
     const map = new Map<string, Problem[]>();
@@ -205,9 +180,9 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
         <div className="action-list" ref={listRef}>
           {dialogue.actions.map((entry, i) => {
             const o = entry.raw;
-            const def = actionDef(o);
+            const def = actionDef(o, customActions);
             const short = def?.shortId ?? (typeof o.action === 'string' ? o.action : '');
-            const Icon = ICONS[short.replace('blablalib:', '')] ?? Ban;
+            const Icon = iconFor(def, short);
             const blocking = def?.id === 'blablalib:play_cutscene' ? o.wait_for_end === true : def?.blocking;
             const selected = entry.uid === selectedUid;
             const s = summary(o);
@@ -265,7 +240,7 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
                   </span>
                   <span className="action-main">
                     <span className="action-label">
-                      {t(def?.label ?? RAW_ACTIONS.find((r) => r.id === short.replace('blablalib:', ''))?.label ?? '') || String(o.action ?? t('Sans action'))}
+                      {(def ? uiText(def.label, def.literal) : t(RAW_ACTIONS.find((r) => r.id === short.replace('blablalib:', ''))?.label ?? '')) || String(o.action ?? t('Sans action'))}
                       {s.speaker && (
                         <span className="speaker-name" style={{ color: s.speaker.color }}>
                           {s.speaker.name}
@@ -291,7 +266,7 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
                   <div className="action-body">
                     {def && (
                       <div className="action-meta">
-                        <span>{t(def.description)}</span>
+                        <span>{uiText(def.description, def.literal)}</span>
                         <span className={blocking ? 'tag on' : 'tag'}>{blocking ? t('Bloquante') : t('Non bloquante')}</span>
                         <span className={def.skippable ? 'tag' : 'tag warn'}>{def.skippable ? t('Passable (Échap)') : t('Non passable')}</span>
                       </div>
@@ -338,6 +313,8 @@ export function Timeline({ dialogue, selectedUid, onSelect, problems, playing, o
 
 function Palette({ onPick }: { onPick: (raw: RawAction) => void }) {
   const groups = Object.keys(GROUP_LABELS) as ActionGroup[];
+  const { customActions } = useEditor();
+  const extensions = [...new Set(customActions.map((a) => a.extension ?? ''))];
   return (
     <div className="palette">
       {groups.map((g) => (
@@ -345,7 +322,7 @@ function Palette({ onPick }: { onPick: (raw: RawAction) => void }) {
           <h4>{t(GROUP_LABELS[g])}</h4>
           <div className="palette-items">
             {ACTIONS.filter((a) => a.group === g).map((a) => {
-              const Icon = ICONS[a.shortId] ?? Ban;
+              const Icon = iconFor(a, a.shortId);
               return (
                 <button key={a.id} title={t(a.description)} onClick={() => onPick(a.defaults)}>
                   <span className="action-icon">
@@ -357,13 +334,33 @@ function Palette({ onPick }: { onPick: (raw: RawAction) => void }) {
             })}
             {g === 'visuel' &&
               RAW_ACTIONS.map((a) => {
-                const Icon = ICONS[a.id];
+                const Icon = iconFor(undefined, a.id);
                 return (
                   <button key={a.id} title={t(a.description)} onClick={() => onPick({ action: a.id })}>
                     <span className="action-icon">
                       <Icon size={14} />
                     </span>
                     {t(a.label)}
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      ))}
+      {extensions.map((name) => (
+        <div key={name} className="palette-group group-extension">
+          <h4>{name}</h4>
+          <div className="palette-items">
+            {customActions
+              .filter((a) => (a.extension ?? '') === name)
+              .map((a) => {
+                const Icon = iconFor(a, a.shortId);
+                return (
+                  <button key={a.id} title={a.description || a.id} onClick={() => onPick(a.defaults)}>
+                    <span className="action-icon">
+                      <Icon size={14} />
+                    </span>
+                    {a.label}
                   </button>
                 );
               })}

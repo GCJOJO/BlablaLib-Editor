@@ -10,6 +10,7 @@ import {
   Maximize,
   Network,
   Pause,
+  Puzzle,
   Play,
   RotateCcw,
   SkipForward,
@@ -46,6 +47,7 @@ const EVENT_ICON: Record<RunEventKind, LucideIcon> = {
   quest: ListChecks,
   cutscene: Clapperboard,
   choice: GitBranch,
+  custom: Puzzle,
   warn: AlertTriangle,
   end: Flag,
   open: Play,
@@ -89,11 +91,12 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
   const backgroundRef = useRef<HTMLCanvasElement | null>(null);
 
   const [log, setLog] = useState<RunEvent[]>([]);
-  const [runState, setRunState] = useState<{ done: boolean; crash: string | null; stuck: boolean; waitingEnter: boolean; dialogue: string | null; ticks: number; unreachable: boolean }>({
+  const [runState, setRunState] = useState<{ done: boolean; crash: string | null; stuck: boolean; waitingEnter: boolean; waitingInput: boolean; dialogue: string | null; ticks: number; unreachable: boolean }>({
     done: false,
     crash: null,
     stuck: false,
     waitingEnter: false,
+    waitingInput: false,
     dialogue: null,
     ticks: 0,
     unreachable: false,
@@ -240,6 +243,7 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
             crash: run.crash,
             stuck: run.stuck,
             waitingEnter: run.waitingForEnter,
+            waitingInput: run.waitingForInput,
             dialogue: s?.dialogueId ?? null,
             ticks: run.tickCount,
             unreachable: unreachable.current,
@@ -314,6 +318,9 @@ export function PreviewPanel({ world, revision, dialogueId, targetIndex, playReq
         )}
         {dialogueId && runState.waitingEnter && !runState.crash && (
           <div className="stage-banner">{t("En attente de la touche Entrée. Ce message n'existe que dans la preview : en jeu, rien ne l'indique.")}</div>
+        )}
+        {dialogueId && runState.waitingInput && !runState.crash && (
+          <div className="stage-banner">{t("Action d'extension : la preview attend un clic, Espace ou Entrée pour continuer.")}</div>
         )}
         {dialogueId && runState.unreachable && !runState.done && !runState.stuck && !runState.crash && (
           <div className="stage-banner">{t("L'action sélectionnée n'est jamais atteinte : la preview s'est arrêtée juste avant.")}</div>

@@ -1,7 +1,8 @@
 // Modèle du projet et lecture / écriture des fichiers de datapack.
 
 import { parseResourceLocation, type RawAction, type SimSpeaker, type SimWorld } from '../engine/sim';
-import { t } from '../i18n';
+import { getLang, t } from '../i18n';
+import { simCustomActions, type Extension } from './extensions';
 
 export interface ActionEntry {
   uid: string;
@@ -39,6 +40,8 @@ export interface Project {
   name: string;
   files: DialogueFile[];
   langs: LangFile[];
+  /** Schémas d'actions custom. Absent des sauvegardes faites avant les extensions. */
+  extensions: Extension[];
 }
 
 let counter = 0;
@@ -160,8 +163,9 @@ export function localesOf(project: Project): string[] {
   return [...set].sort();
 }
 
-export function makeWorld(project: Project, locale: string): SimWorld {
+export function makeWorld(project: Project, locale: string, lang = getLang()): SimWorld {
   return {
+    customActions: simCustomActions(project.extensions, lang),
     dialogue: (id) => findDialogue(project, id)?.dialogue.actions.map((a) => a.raw),
     speakers: allSpeakers(project),
     translate: (key) => translate(project, locale, key),
@@ -192,5 +196,6 @@ export function emptyProject(): Project {
       },
     ],
     langs: [],
+    extensions: [],
   };
 }

@@ -5,7 +5,7 @@ import { EASINGS, EASING_NAMES } from '../engine/easing';
 import { parseResourceLocation } from '../engine/sim';
 import { N_, t } from '../i18n';
 import { hasTranslation, translate } from '../model/project';
-import { CLEARABLE, type FieldDef } from '../model/schema';
+import { clearableIds, label as uiText, type FieldDef } from '../model/schema';
 import { messageLines, MESSAGE_MAX_LINES, MESSAGE_MAX_WIDTH } from '../model/validate';
 import { useEditor } from './context';
 
@@ -141,12 +141,12 @@ export function RichTextArea({ value, onChange, placeholder, measure }: { value:
 }
 
 /** Texte brut ou clé de traduction : si c'est une clé connue, on édite la traduction juste en dessous. */
-export function TranslatableText({ value, onChange, multiline, placeholder }: { value: string; onChange: (v: string | undefined) => void; multiline?: boolean; placeholder?: string }) {
+export function TranslatableText({ value, onChange, multiline, placeholder, measure = true }: { value: string; onChange: (v: string | undefined) => void; multiline?: boolean; placeholder?: string; measure?: boolean }) {
   const { project, locale, setTranslation } = useEditor();
   const isKey = !!value && hasTranslation(project, value);
   if (!isKey) {
     return multiline ? (
-      <RichTextArea value={value} placeholder={placeholder} measure onChange={(v) => onChange(v || undefined)} />
+      <RichTextArea value={value} placeholder={placeholder} measure={measure} onChange={(v) => onChange(v || undefined)} />
     ) : (
       <input value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value || undefined)} />
     );
@@ -157,7 +157,7 @@ export function TranslatableText({ value, onChange, multiline, placeholder }: { 
       <input className="mono" value={value} spellCheck={false} onChange={(e) => onChange(e.target.value || undefined)} />
       <div className="translated-tag">{t('Clé de traduction · {locale}', { locale })}</div>
       {multiline ? (
-        <RichTextArea value={translated} measure onChange={(v) => setTranslation(value, locale, v)} />
+        <RichTextArea value={translated} measure={measure} onChange={(v) => setTranslation(value, locale, v)} />
       ) : (
         <input value={translated} onChange={(e) => setTranslation(value, locale, e.target.value)} />
       )}
@@ -254,8 +254,11 @@ export function EasingSelect({ value, onChange }: { value: unknown; onChange: (v
 }
 
 export function SchemaField({ def, value, onChange, setMany }: { def: FieldDef; value: unknown; onChange: (v: unknown) => void; setMany?: (patch: Record<string, unknown>) => void }) {
+  const { customActions } = useEditor();
   const [, force] = useState(0);
-  const placeholder = def.placeholder ? t(def.placeholder) : undefined;
+  const text = (s: string) => uiText(s, def.literal);
+  const placeholder = def.placeholder ? text(def.placeholder) : undefined;
+  const clearable = clearableIds(customActions);
   const body = (() => {
     switch (def.type) {
       case 'text':
@@ -265,13 +268,13 @@ export function SchemaField({ def, value, onChange, setMany }: { def: FieldDef; 
           <input value={typeof value === 'string' ? value : value === undefined ? '' : String(value)} placeholder={placeholder} spellCheck={false} onChange={(e) => onChange(e.target.value || undefined)} />
         );
       case 'multiline':
-        return <TranslatableText multiline value={typeof value === 'string' ? value : ''} placeholder={placeholder} onChange={onChange} />;
+        return <TranslatableText multiline measure={def.measure !== false} value={typeof value === 'string' ? value : ''} placeholder={placeholder} onChange={onChange} />;
       case 'number':
         return (
           <div className="number-row">
             <NumberInput value={value} placeholder={placeholder} step={def.step} min={def.min} max={def.max} onChange={onChange} />
             {def.slider && (
-              <input type="range" min={def.min} max={def.max} step={def.step ?? 1} value={typeof value === 'number' ? value : 0} aria-label={t(def.label)} onChange={(e) => onChange(Number(e.target.value))} />
+              <input type="range" min={def.min} max={def.max} step={def.step ?? 1} value={typeof value === 'number' ? value : 0} aria-label={text(def.label)} onChange={(e) => onChange(Number(e.target.value))} />
             )}
           </div>
         );
@@ -305,8 +308,8 @@ export function SchemaField({ def, value, onChange, setMany }: { def: FieldDef; 
         return (
           <select value={typeof value === 'string' ? value : ''} onChange={(e) => onChange(e.target.value || undefined)}>
             <option value="">{t('Tout effacer')}</option>
-            {typeof value === 'string' && value && !CLEARABLE.includes(value) && <option value={value}>{value}</option>}
-            {CLEARABLE.map((id) => (
+            {typeof value === 'string' && value && !clearable.includes(value) && <option value={value}>{value}</option>}
+            {clearable.map((id) => (
               <option key={id} value={id}>
                 {id}
               </option>
@@ -318,7 +321,7 @@ export function SchemaField({ def, value, onChange, setMany }: { def: FieldDef; 
     }
   })();
   return (
-    <Field label={t(def.label)} hint={def.hint ? t(def.hint) : undefined} half={def.half}>
+    <Field label={def.required ? `${text(def.label)} *` : text(def.label)} hint={def.hint ? text(def.hint) : undefined} half={def.half}>
       {body}
     </Field>
   );

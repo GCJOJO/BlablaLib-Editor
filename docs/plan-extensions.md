@@ -2,6 +2,8 @@
 
 Permettre aux utilisateurs de décrire le schéma de leurs actions custom, avec un éditeur dédié et un chargement / une sauvegarde en JSON.
 
+> **Statut :** implémenté, avec les choix recommandés ci-dessous (extensions par projet, `registerOverload` laissé pour plus tard, preview limitée au rythme et au journal). Exemple : `docs/extension-exemple.json`.
+
 ## Principe
 
 Une extension est un fichier JSON qui **décrit** des actions custom, sans contenir de code. On peut donc la partager sans risque, et l'éditeur en génère les mêmes formulaires que pour les actions de base.
