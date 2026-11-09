@@ -1,0 +1,195 @@
+{
+  "speakers": [
+    {
+      "id": "blablalib:dog",
+      "name": "blablalib.speaker.dog",
+      "color": "#FFFFFFFF",
+      "sounds": []
+    }
+  ],
+  "dogcheck": [
+    {
+      "action": "blablalib:image",
+      "id": 0,
+      "image": "blablalib:textures/gui/woof.png",
+      "fade_in_time": 10,
+      "width": 1915,
+      "height": 1915,
+      "x" : 50,
+      "y": 40,
+      "alpha": 0
+    },
+    {
+      "action": "blablalib:image_move",
+      "id": 0,
+      "color" : {
+        "time" : 10,
+        "from" : "#FFFFFF00",
+        "to" : "#FFFFFFFF"
+      }
+    },
+    {
+      "action": "blablalib:wait",
+      "time": 10
+    },
+    { "action": "blablalib:sound", "sound": "entity.wolf.whine" },
+    {
+      "action": "blablalib:message",
+      "speaker": "blablalib:dog",
+      "text": "blablalib.dogcheck.woof"
+    },
+    {
+      "action": "blablalib:image_move",
+      "id": 0,
+
+      "color" : {
+        "time" : 10,
+        "from" : "#FFFFFFFF",
+        "to" : "#FFFFFF00"
+      }
+    },
+    {
+      "action": "blablalib:wait",
+      "time": 10
+    },
+    {
+      "action": "blablalib:clear"
+    },
+    {
+      "action": "blablalib:wait",
+      "time": 10
+    },
+    {
+      "action": "blablalib:fade",
+      "from": "#00000000",
+      "to": "#000000FF",
+      "time": 10
+    },
+    {
+      "action": "blablalib:wait",
+      "time": 20
+    },
+    {
+      "action": "blablalib:image",
+      "id": 0,
+      "image": "blablalib:textures/gui/woof.png",
+      "fade_in_time": 10,
+      "width": 1915,
+      "height": 1915,
+      "x": 50,
+      "y": 200
+    },
+    {
+      "action": "blablalib:image_move",
+      "id": 0,
+      "position" : {
+        "time" : 5,
+        "y_start" : 200,
+        "y_end" : 40
+      }
+    },
+    { "action": "blablalib:sound", "sound": "entity.wolf.growl" },
+    {
+      "action": "blablalib:message",
+      "speaker": "blablalib:dog",
+      "text": "blablalib.dogcheck.jumpscare"
+    },
+    {
+      "action": "blablalib:clear",
+      "cleared_actions": "blablalib:fade"
+    },
+    {
+      "action": "blablalib:fade",
+      "from": "#000000FF",
+      "to": "#00000000",
+      "time": 10
+    },
+    {
+      "action": "blablalib:image_move",
+      "id": 0,
+
+      "color" : {
+        "time" : 10,
+        "from" : "#FFFFFFFF",
+        "to" : "#FFFFFF00"
+      }
+    },
+    {
+      "action": "blablalib:wait",
+      "time": 15
+    },
+    {
+      "action": "blablalib:command",
+      "command": "title @s title \"DOGCHECK\""
+    },
+    {
+      "action": "blablalib:command",
+      "command": "tp @s ~ ~10 ~"
+    }
+  ],
+
+  "test_choice" : [
+    { "action": "blablalib:message", "speaker": "blablalib:dog", "text": "Test Choice" },
+    { "action": "blablalib:choice", "option1": "Choice 1", "action1": "none", "next1": "blablalib:choice1", "save1": "blablalib:choice1", "option2": "Choice 2", "action2": "none", "next2": "blablalib:choice2", "save2": "blablalib:choice2" }
+  ],
+
+  "choice1": [
+    { "action": "blablalib:message", "speaker": "blablalib:dog", "text": "Choice 1" },
+    { "action": "blablalib:hide_ui" },
+    { "action": "blablalib:wait", "time": 90}
+  ],
+
+  "choice2": [
+    { "action": "blablalib:message", "speaker": "blablalib:dog", "text": "Choice 2" }
+  ],
+
+  "test_three_choices" : [
+    {
+      "action": "blablalib:choice",
+      "choices" : [
+        {
+          "name" : "Good Choice",
+          "next" : "blablalib:good_choice",
+          "save" : "blablalib:good_choice"
+        },
+        {
+          "name" : "Middle Choice",
+          "next" : "blablalib:middle_choice",
+          "save" : "blablalib:middle_choice"
+        },
+        {
+          "name" : "Bad Choice",
+          "next" : "blablalib:bad_choice",
+          "save" : "blablalib:bad_choice"
+        }
+      ]
+    }
+  ],
+
+  "good_choice" : [
+    { "action" : "blablalib:message" , "speaker" : "blablalib:dog", "text" : "Good choice !" }
+  ],
+
+  "middle_choice" : [
+    { "action" : "blablalib:message" , "speaker" : "blablalib:dog", "text" : "It's a choice..." }
+  ],
+
+  "bad_choice" : [
+    { "action" : "blablalib:message" , "speaker" : "blablalib:dog", "text" : "You chose the bad one ! >:(" }
+  ],
+
+  "test_npc_first_dialogue": [
+    { "action": "blablalib:message", "speaker":  "blablalib:dog", "text": "Hey there I am an NPC !" },
+    { "action": "blablalib:npc", "npc":  0, "variable" : "has_said_hello", "type":  "bool", "value": true }
+  ],
+
+  "test_npc_said_hello" : [
+    { "action": "blablalib:message", "speaker":  "blablalib:dog", "text": "I changed dialogue !" }
+  ],
+
+  "test_speed" : [
+    { "action": "blablalib:message", "speaker": "blablalib:dog", "text": "Very long message to test the new Dialogue Timings Action. I am a very very long message please do not read me." },
+    { "action": "blablalib:timings", "speed": 10, "wait": 16 },
+    { "action": "blablalib:message", "speaker": "blablalib:dog", "text": "Very long message to test the new Dialogue Timings Action. I am a very very long message please do not read me." }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "blablalib.commands.invalid_dialogue": "Dialogue invalide: %s",
+  "blablalib.commands.updated_dialogue": "Dialogue mis à jour vers: %s",
+  "blablalib.commands.must_be_player" : "Cette commande ne peut être exécutée que par un joueur.",
+  "blablalib.commands.reset_success" : "Réinitialisation du dernier dialogue lu par le joueur.",
+
+  "blablalib.speaker.dog": "Le chien :D",
+  "blablalib.dogcheck.woof": "[shake]Wouaf ![/shake]",
+  "blablalib.dogcheck.jumpscare": "[shake]Wouaf qui fait peur ![/shake]"
+}

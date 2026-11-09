@@ -1,0 +1,10 @@
+{
+  "blablalib.commands.invalid_dialogue": "Invalid dialogue: %s",
+  "blablalib.commands.updated_dialogue": "Updated dialogue to %s",
+  "blablalib.commands.must_be_player" : "You must be a player to execute this command.",
+  "blablalib.commands.reset_success" : "Last Read dialogue successfully reset!",
+
+  "blablalib.speaker.dog": "Dog :D",
+  "blablalib.dogcheck.woof": "[shake]Woof[/shake]",
+  "blablalib.dogcheck.jumpscare": "[shake]Woof jumpscare ![/shake]"
+}
