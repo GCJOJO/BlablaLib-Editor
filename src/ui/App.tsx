@@ -681,7 +681,7 @@ export function App() {
           <div className="preview-col">
             <PreviewPanel
               world={world}
-              revision={project}
+              revision={world}
               dialogueId={currentId}
               targetIndex={selectedIndex}
               playRequest={playRequest}

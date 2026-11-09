@@ -53,7 +53,7 @@ const EVENT_ICON: Record<RunEventKind, LucideIcon> = {
 
 interface Props {
   world: SimWorld;
-  /** Change à chaque modification du projet : relance la preview à l'endroit courant. */
+  /** Change à chaque modification du projet ou de la langue de preview : relance la preview à l'endroit courant. */
   revision: unknown;
   dialogueId: string | null;
   targetIndex: number;
