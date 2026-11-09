@@ -623,11 +623,6 @@ export function App() {
             <option key={id} value={id} />
           ))}
         </datalist>
-        <datalist id="speaker-ids">
-          {ctx.speakers.map((s, i) => (
-            <option key={i} value={s.id} />
-          ))}
-        </datalist>
         <datalist id="texture-ids">
           {textureIds.map((id) => (
             <option key={id} value={id} />

@@ -164,7 +164,8 @@ export const en: Record<string, string> = {
   'Utiliser cette taille': 'Use this size',
   '{name} (inconnu)': '{name} (unknown)',
   'Oui': 'Yes',
-  'namespace:personnage': 'namespace:speaker',
+  'Aucun personnage': 'No speaker',
+  '{id} (introuvable)': '{id} (not found)',
   'Tout effacer': 'Clear everything',
 
   // --- Formulaires d'action --------------------------------------------------------------------

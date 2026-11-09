@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { ArrowUpRight, Upload } from 'lucide-react';
 import { colorFromString, cssColor, encodeColor, rgba } from '../engine/color';
 import { EASINGS, EASING_NAMES } from '../engine/easing';
+import { parseResourceLocation } from '../engine/sim';
 import { N_, t } from '../i18n';
 import { hasTranslation, translate } from '../model/project';
 import { CLEARABLE, type FieldDef } from '../model/schema';
@@ -253,7 +254,6 @@ export function EasingSelect({ value, onChange }: { value: unknown; onChange: (v
 }
 
 export function SchemaField({ def, value, onChange, setMany }: { def: FieldDef; value: unknown; onChange: (v: unknown) => void; setMany?: (patch: Record<string, unknown>) => void }) {
-  const { speakers, project, locale } = useEditor();
   const [, force] = useState(0);
   const placeholder = def.placeholder ? t(def.placeholder) : undefined;
   const body = (() => {
@@ -297,12 +297,7 @@ export function SchemaField({ def, value, onChange, setMany }: { def: FieldDef; 
         return <DialogueField value={value} onChange={onChange} />;
       case 'speaker':
         return (
-          <div className="with-action">
-            <input className="mono" list="speaker-ids" value={typeof value === 'string' ? value : ''} placeholder={t('namespace:personnage')} spellCheck={false} onChange={(e) => onChange(e.target.value || undefined)} />
-            {typeof value === 'string' && speakers.some((s) => s.id === value) && (
-              <span className="speaker-chip">{translate(project, locale, speakers.find((s) => s.id === value)!.name)}</span>
-            )}
-          </div>
+          <SpeakerSelect value={value} onChange={onChange} />
         );
       case 'texture':
         return <TextureField value={value} onChange={onChange} onDims={setMany ? (width, height) => setMany({ width, height }) : undefined} />;
@@ -326,6 +321,31 @@ export function SchemaField({ def, value, onChange, setMany }: { def: FieldDef; 
     <Field label={t(def.label)} hint={def.hint ? t(def.hint) : undefined} half={def.half}>
       {body}
     </Field>
+  );
+}
+
+/** Personnages de tous les fichiers du projet. Une valeur inconnue reste choisie pour ne pas la perdre. */
+function SpeakerSelect({ value, onChange }: { value: unknown; onChange: (v: string | undefined) => void }) {
+  const { speakers, project, locale } = useEditor();
+  const str = typeof value === 'string' ? value : '';
+  // Le mod compare des ResourceLocation : « dog » et « minecraft:dog » désignent le même personnage.
+  const unique = speakers.filter((s, i) => speakers.findIndex((o) => o.id === s.id) === i);
+  const target = str ? parseResourceLocation(str) : null;
+  const match = target ? unique.find((s) => parseResourceLocation(String(s.id)) === target) : undefined;
+  const color = match ? colorFromString(String(match.color ?? '')) : null;
+  return (
+    <div className="with-action">
+      <span className="speaker-dot" style={{ background: color ? cssColor({ ...color, a: 255 }) : 'transparent' }} aria-hidden="true" />
+      <select value={match ? String(match.id) : str} onChange={(e) => onChange(e.target.value || undefined)}>
+        <option value="">{t('Aucun personnage')}</option>
+        {str && !match && <option value={str}>{t('{id} (introuvable)', { id: str })}</option>}
+        {unique.map((s) => (
+          <option key={String(s.id)} value={String(s.id)}>
+            {translate(project, locale, String(s.name ?? ''))} · {String(s.id)}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 

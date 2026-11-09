@@ -774,14 +774,12 @@ h2.mono {
   align-items: center;
   gap: 6px;
 }
-.speaker-chip {
+.speaker-dot {
   flex: none;
-  max-width: 45%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--muted);
-  font-size: 12px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
 }
 .number-row {
   display: flex;
